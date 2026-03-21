@@ -40,6 +40,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var previewView: PreviewView
     private lateinit var btnCapture: ImageButton
     private lateinit var btnFlip: ImageButton
+    private lateinit var btnFlash: ImageButton
     private lateinit var btnGallery: ImageButton
     private lateinit var overlayView: FaceOverlayView
     private lateinit var zoomSeekBar: SeekBar
@@ -77,6 +78,7 @@ class MainActivity : AppCompatActivity() {
         previewView = findViewById(R.id.previewView)
         btnCapture = findViewById(R.id.btnCapture)
         btnFlip = findViewById(R.id.btnFlip)
+        btnFlash = findViewById(R.id.btnFlash)
         btnGallery = findViewById(R.id.btnGallery)
         overlayView = findViewById(R.id.overlayView)
         zoomSeekBar = findViewById(R.id.zoomSeekBar)
@@ -125,6 +127,7 @@ class MainActivity : AppCompatActivity() {
             if (currentMode == "וידאו") toggleVideo() else takePhoto()
         }
         btnFlip.setOnClickListener { flipCamera() }
+        btnFlash.setOnClickListener { toggleFlash() }
 
         modeFocus.setOnClickListener { switchMode("דיוק") }
         modePhoto.setOnClickListener { switchMode("תמונה") }
@@ -144,8 +147,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun showMoreModes() {
         val modes = arrayOf("לילה 🌙", "פנורמה 🌅", "מזון 🍔", "הילוך איטי 🐢",
-            "טיים-לאפס ⏩", "מקצועי 📷", "פורטרט 👤", "הקלטה כפולה 📹")
-        android.app.AlertDialog.Builder(this, android.R.style.Theme_Material_Dialog_Alert)
+            "טיים-לאפס ⏩", "מקצועי 📷", "פורטרט 👤")
+        android.app.AlertDialog.Builder(this)
             .setTitle("בחר מצב")
             .setItems(modes) { _, which ->
                 Toast.makeText(this, "מצב: ${modes[which]}", Toast.LENGTH_SHORT).show()
@@ -156,15 +159,15 @@ class MainActivity : AppCompatActivity() {
         currentMode = mode
         listOf(modeFocus, modePhoto, modeVideo, modeMore).forEach {
             it.setTextColor(Color.parseColor("#AAAAAA"))
-            it.textSize = 14f
+            it.textSize = 13f
         }
         when (mode) {
-            "דיוק" -> { modeFocus.setTextColor(Color.WHITE); modeFocus.textSize = 15f }
-            "תמונה" -> { modePhoto.setTextColor(Color.WHITE); modePhoto.textSize = 15f
-                btnCapture.setBackgroundColor(Color.WHITE) }
-            "וידאו" -> { modeVideo.setTextColor(Color.WHITE); modeVideo.textSize = 15f
+            "דיוק" -> { modeFocus.setTextColor(Color.WHITE); modeFocus.textSize = 14f }
+            "תמונה" -> { modePhoto.setTextColor(Color.WHITE); modePhoto.textSize = 14f
+                btnCapture.setBackgroundResource(R.drawable.circle_white) }
+            "וידאו" -> { modeVideo.setTextColor(Color.WHITE); modeVideo.textSize = 14f
                 btnCapture.setBackgroundColor(Color.RED) }
-            else -> { modeMore.setTextColor(Color.WHITE); modeMore.textSize = 15f }
+            else -> { modeMore.setTextColor(Color.WHITE); modeMore.textSize = 14f }
         }
     }
 
@@ -207,7 +210,8 @@ class MainActivity : AppCompatActivity() {
                 val mediaImage = imageProxy.image
                 if (mediaImage != null) {
                     faceDetector.process(
-                        InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees))
+                        InputImage.fromMediaImage(mediaImage,
+                            imageProxy.imageInfo.rotationDegrees))
                         .addOnSuccessListener { faces ->
                             overlayView.setFaces(faces, imageProxy.width, imageProxy.height,
                                 lensFacing == CameraSelector.LENS_FACING_FRONT)
@@ -252,8 +256,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun toggleVideo() {
         if (isRecording) {
-            recording?.stop(); isRecording = false
-            btnCapture.setBackgroundColor(Color.WHITE)
+            recording?.stop()
+            isRecording = false
+            btnCapture.setBackgroundResource(R.drawable.circle_white)
             Toast.makeText(this, "⏹ נשמר!", Toast.LENGTH_SHORT).show()
         } else {
             val name = "UltraVision_${System.currentTimeMillis()}"
@@ -264,7 +269,8 @@ class MainActivity : AppCompatActivity() {
             }
             recording = videoCapture?.output?.prepareRecording(this,
                 MediaStoreOutputOptions.Builder(contentResolver,
-                    MediaStore.Video.Media.EXTERNAL_CONTENT_URI).setContentValues(cv).build())
+                    MediaStore.Video.Media.EXTERNAL_CONTENT_URI)
+                    .setContentValues(cv).build())
                 ?.apply {
                     if (ContextCompat.checkSelfPermission(this@MainActivity,
                             Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED)
@@ -282,9 +288,12 @@ class MainActivity : AppCompatActivity() {
         startCamera()
     }
 
-    fun toggleFlash() {
+    private fun toggleFlash() {
         flashEnabled = !flashEnabled
         camera?.cameraControl?.enableTorch(flashEnabled)
+        btnFlash.setImageResource(
+            if (flashEnabled) android.R.drawable.btn_star_big_on
+            else android.R.drawable.btn_star_big_off)
         Toast.makeText(this, if (flashEnabled) "💡 פנס פעיל" else "פנס כבוי",
             Toast.LENGTH_SHORT).show()
     }
