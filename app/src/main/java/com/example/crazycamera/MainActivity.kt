@@ -5,8 +5,6 @@ import android.content.ContentValues
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
-import android.hardware.camera2.CameraCharacteristics
-import android.hardware.camera2.CameraManager
 import android.os.Bundle
 import android.provider.MediaStore
 import android.view.GestureDetector
@@ -70,12 +68,10 @@ class MainActivity : AppCompatActivity() {
     private var flashEnabled = false
     private var currentMode = "תמונה"
     private var currentZoom = 0.1f
-    private var torchCameraId: String? = null
 
     private lateinit var scaleGestureDetector: ScaleGestureDetector
     private lateinit var gestureDetector: GestureDetector
     private lateinit var faceDetector: FaceDetector
-    private lateinit var cameraManager: CameraManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -101,13 +97,6 @@ class MainActivity : AppCompatActivity() {
         zoom3x = findViewById(R.id.zoom3x)
         zoom10x = findViewById(R.id.zoom10x)
 
-        // פנס - CameraManager ישיר
-        cameraManager = getSystemService(CAMERA_SERVICE) as CameraManager
-        torchCameraId = cameraManager.cameraIdList.firstOrNull { id ->
-            cameraManager.getCameraCharacteristics(id)
-                .get(CameraCharacteristics.FLASH_INFO_AVAILABLE) == true
-        }
-
         faceDetector = FaceDetection.getClient(
             FaceDetectorOptions.Builder()
                 .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_FAST)
@@ -122,7 +111,8 @@ class MainActivity : AppCompatActivity() {
                     val zoom = camera?.cameraInfo?.zoomState?.value
                     val newZoom = (zoom?.zoomRatio ?: 1f) * detector.scaleFactor
                     camera?.cameraControl?.setZoomRatio(
-                        newZoom.coerceIn(zoom?.minZoomRatio ?: 1f, zoom?.maxZoomRatio ?: 1f))
+                        newZoom.coerceIn(zoom?.minZoomRatio ?: 1f,
+                            zoom?.maxZoomRatio ?: 1f))
                     return true
                 }
             })
@@ -146,7 +136,8 @@ class MainActivity : AppCompatActivity() {
             gestureDetector.onTouchEvent(event)
             if (event.action == MotionEvent.ACTION_UP &&
                 !scaleGestureDetector.isInProgress) {
-                val point = previewView.meteringPointFactory.createPoint(event.x, event.y)
+                val point = previewView.meteringPointFactory
+                    .createPoint(event.x, event.y)
                 camera?.cameraControl?.startFocusAndMetering(
                     FocusMeteringAction.Builder(point).build())
             }
@@ -162,6 +153,11 @@ class MainActivity : AppCompatActivity() {
         btnFlip.setOnClickListener { flipCamera() }
         btnFlash.setOnClickListener { toggleFlash() }
 
+        // כפתור הגדרות - גלגל שיניים
+        findViewById<ImageButton>(R.id.btnSettings).setOnClickListener {
+            showSettings()
+        }
+
         modeFocus.setOnClickListener { switchMode("דיוק") }
         modePhoto.setOnClickListener { switchMode("תמונה") }
         modeVideo.setOnClickListener { switchMode("וידאו") }
@@ -173,36 +169,48 @@ class MainActivity : AppCompatActivity() {
         zoom3x.setOnClickListener { setZoom(0.5f); highlightZoom(zoom3x) }
         zoom10x.setOnClickListener { setZoom(0.9f); highlightZoom(zoom10x) }
 
-        // גלריה - שיטה נכונה
         btnGallery.setOnClickListener {
             try {
                 val intent = Intent(Intent.ACTION_PICK,
                     MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
-                intent.type = "image/*"
                 startActivity(intent)
             } catch (e: Exception) {
-                try {
-                    val intent = Intent(Intent.ACTION_VIEW)
-                    intent.type = "image/*"
-                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                    startActivity(Intent.createChooser(intent, "פתח גלריה"))
-                } catch (ex: Exception) {
-                    Toast.makeText(this, "לא נמצאה אפליקציית גלריה",
-                        Toast.LENGTH_SHORT).show()
-                }
+                Toast.makeText(this, "לא נמצאה גלריה", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
+    private fun showSettings() {
+        val options = arrayOf(
+            "איכות תמונה: גבוהה",
+            "יחס תמונה: 4:3",
+            "יחס תמונה: 16:9",
+            "טיימר: כבוי",
+            "טיימר: 3 שניות",
+            "טיימר: 10 שניות"
+        )
+        android.app.AlertDialog.Builder(this)
+            .setTitle("⚙️ הגדרות")
+            .setItems(options) { _, which ->
+                Toast.makeText(this, options[which], Toast.LENGTH_SHORT).show()
+            }.show()
+    }
+
     private fun showMoreModes() {
-        val modes = arrayOf("לילה 🌙", "פנורמה 🌅", "מזון 🍔",
-            "הילוך איטי 🐢", "טיים-לאפס ⏩", "מקצועי 📷",
-            "פורטרט 👤", "HDR 🌈")
+        val modes = arrayOf(
+            "לילה 🌙",
+            "פנורמה 🌅",
+            "מזון 🍔",
+            "הילוך איטי 🐢",
+            "טיים-לאפס ⏩",
+            "מקצועי 📷",
+            "פורטרט 👤",
+            "HDR 🌈"
+        )
         android.app.AlertDialog.Builder(this)
             .setTitle("בחר מצב")
             .setItems(modes) { _, which ->
-                Toast.makeText(this, "מצב: ${modes[which]}",
-                    Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "מצב: ${modes[which]}", Toast.LENGTH_SHORT).show()
             }.show()
     }
 
@@ -213,16 +221,24 @@ class MainActivity : AppCompatActivity() {
             it.textSize = 13f
         }
         when (mode) {
-            "דיוק" -> { modeFocus.setTextColor(Color.WHITE); modeFocus.textSize = 14f }
+            "דיוק" -> {
+                modeFocus.setTextColor(Color.WHITE)
+                modeFocus.textSize = 14f
+            }
             "תמונה" -> {
-                modePhoto.setTextColor(Color.WHITE); modePhoto.textSize = 14f
+                modePhoto.setTextColor(Color.WHITE)
+                modePhoto.textSize = 14f
                 btnCapture.setBackgroundResource(R.drawable.circle_white)
             }
             "וידאו" -> {
-                modeVideo.setTextColor(Color.WHITE); modeVideo.textSize = 14f
+                modeVideo.setTextColor(Color.WHITE)
+                modeVideo.textSize = 14f
                 btnCapture.setBackgroundColor(Color.RED)
             }
-            else -> { modeMore.setTextColor(Color.WHITE); modeMore.textSize = 14f }
+            else -> {
+                modeMore.setTextColor(Color.WHITE)
+                modeMore.textSize = 14f
+            }
         }
     }
 
@@ -283,6 +299,10 @@ class MainActivity : AppCompatActivity() {
                 CameraSelector.Builder().requireLensFacing(lensFacing).build(),
                 preview, imageCapture, videoCapture, imageAnalysis)
             camera?.cameraControl?.setLinearZoom(currentZoom)
+            // פנס - שחזור אחרי החלפת מצלמה
+            if (flashEnabled) {
+                camera?.cameraControl?.enableTorch(true)
+            }
         } catch (e: Exception) {
             Toast.makeText(this, "שגיאה: ${e.message}", Toast.LENGTH_SHORT).show()
         }
@@ -346,24 +366,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun toggleFlash() {
-        val id = torchCameraId
-        if (id == null) {
-            Toast.makeText(this, "אין פנס בטלפון זה", Toast.LENGTH_SHORT).show()
-            return
-        }
-        try {
-            flashEnabled = !flashEnabled
-            cameraManager.setTorchMode(id, flashEnabled)
-            btnFlash.setImageResource(
-                if (flashEnabled) android.R.drawable.ic_menu_view
-                else android.R.drawable.ic_menu_camera)
-            Toast.makeText(this,
-                if (flashEnabled) "🔦 פנס פעיל" else "פנס כבוי",
-                Toast.LENGTH_SHORT).show()
-        } catch (e: Exception) {
-            flashEnabled = false
-            Toast.makeText(this, "שגיאת פנס: ${e.message}", Toast.LENGTH_LONG).show()
-        }
+        flashEnabled = !flashEnabled
+        // שימוש ב-CameraX enableTorch - הדרך הנכונה כשהמצלמה פתוחה
+        camera?.cameraControl?.enableTorch(flashEnabled)
+            ?.addListener({
+                runOnUiThread {
+                    btnFlash.setImageResource(
+                        if (flashEnabled) android.R.drawable.ic_menu_view
+                        else android.R.drawable.ic_menu_camera)
+                }
+            }, ContextCompat.getMainExecutor(this))
     }
 
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
@@ -378,32 +390,10 @@ class MainActivity : AppCompatActivity() {
         else Toast.makeText(this, "נדרשות הרשאות", Toast.LENGTH_LONG).show()
     }
 
-    override fun onPause() {
-        super.onPause()
-        if (flashEnabled) {
-            torchCameraId?.let {
-                try { cameraManager.setTorchMode(it, false) } catch (e: Exception) {}
-            }
-        }
-    }
-
-    override fun onResume() {
-        super.onResume()
-        if (flashEnabled) {
-            torchCameraId?.let {
-                try { cameraManager.setTorchMode(it, true) } catch (e: Exception) {}
-            }
-        }
-    }
-
     override fun onDestroy() {
         super.onDestroy()
+        camera?.cameraControl?.enableTorch(false)
         cameraExecutor.shutdown()
-        if (flashEnabled) {
-            torchCameraId?.let {
-                try { cameraManager.setTorchMode(it, false) } catch (e: Exception) {}
-            }
-        }
     }
 
     companion object {
