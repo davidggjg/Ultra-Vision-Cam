@@ -11,7 +11,11 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>
 
-    <!-- אייקוני כלים עליונים -->
+    <com.example.crazycamera.FaceOverlayView
+        android:id="@+id/overlayView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -41,7 +45,6 @@
 
     </LinearLayout>
 
-    <!-- כפתורי זום -->
     <LinearLayout
         android:id="@+id/zoomBar"
         android:layout_width="wrap_content"
@@ -79,7 +82,6 @@
 
     </LinearLayout>
 
-    <!-- בר מצבים -->
     <LinearLayout
         android:id="@+id/modesBar"
         android:layout_width="match_parent"
@@ -107,7 +109,6 @@
 
     </LinearLayout>
 
-    <!-- בר תחתון -->
     <LinearLayout
         android:id="@+id/bottomBar"
         android:layout_width="match_parent"
@@ -118,7 +119,6 @@
         android:background="#CC000000"
         app:layout_constraintBottom_toBottomOf="parent">
 
-        <!-- גלריה -->
         <ImageButton
             android:id="@+id/btnGallery"
             android:layout_width="60dp"
@@ -128,7 +128,6 @@
 
         <Space android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1"/>
 
-        <!-- כפתור צילום עגול -->
         <ImageButton
             android:id="@+id/btnCapture"
             android:layout_width="80dp"
@@ -138,7 +137,6 @@
 
         <Space android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1"/>
 
-        <!-- הפיכת מצלמה -->
         <ImageButton
             android:id="@+id/btnVideo"
             android:layout_width="60dp"
@@ -148,7 +146,6 @@
 
     </LinearLayout>
 
-    <!-- SeekBar זום מוסתר -->
     <SeekBar
         android:id="@+id/zoomSeekBar"
         android:layout_width="1dp"
