@@ -13,3 +13,6 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
+
+rootProject.name = "UltraVisionCam"
+include ':app'
