@@ -1,26 +1,39 @@
-import androidx.camera.core.Camera
 package com.example.crazycamera
 
 import android.Manifest
 import android.content.ContentValues
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.os.Bundle
-import android.view.*
+import android.provider.MediaStore
+import android.view.MotionEvent
+import android.view.WindowManager
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
-import androidx.camera.core.*
-import androidx.camera.extensions.*
+import androidx.camera.core.Camera
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.FocusMeteringAction
+import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.ImageCapture
+import androidx.camera.core.ImageCaptureException
+import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.camera.video.*
+import androidx.camera.video.MediaStoreOutputOptions
+import androidx.camera.video.Quality
+import androidx.camera.video.QualitySelector
+import androidx.camera.video.Recorder
+import androidx.camera.video.Recording
+import androidx.camera.video.VideoCapture
 import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import android.provider.MediaStore
-import android.graphics.*
-import android.view.ScaleGestureDetector
 import com.google.mlkit.vision.common.InputImage
-import com.google.mlkit.vision.face.*
+import com.google.mlkit.vision.face.FaceDetection
+import com.google.mlkit.vision.face.FaceDetector
+import com.google.mlkit.vision.face.FaceDetectorOptions
 import java.util.concurrent.Executors
+import android.view.ScaleGestureDetector
 
 class MainActivity : AppCompatActivity() {
 
@@ -63,10 +76,11 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // הסתר סרגל עליון
         supportActionBar?.hide()
-        window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
-            WindowManager.LayoutParams.FLAG_FULLSCREEN)
+        window.setFlags(
+            WindowManager.LayoutParams.FLAG_FULLSCREEN,
+            WindowManager.LayoutParams.FLAG_FULLSCREEN
+        )
 
         previewView = findViewById(R.id.previewView)
         btnCapture = findViewById(R.id.btnCapture)
@@ -88,7 +102,6 @@ class MainActivity : AppCompatActivity() {
         zoom3x = findViewById(R.id.zoom3x)
         zoom10x = findViewById(R.id.zoom10x)
 
-        // ML Kit זיהוי פנים
         val options = FaceDetectorOptions.Builder()
             .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_FAST)
             .setLandmarkMode(FaceDetectorOptions.LANDMARK_MODE_ALL)
@@ -96,7 +109,6 @@ class MainActivity : AppCompatActivity() {
             .build()
         faceDetector = FaceDetection.getClient(options)
 
-        // זום בתנועת אצבעות
         scaleGestureDetector = ScaleGestureDetector(this,
             object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
                 override fun onScale(detector: ScaleGestureDetector): Boolean {
@@ -104,14 +116,17 @@ class MainActivity : AppCompatActivity() {
                     val currentZoomRatio = zoom?.zoomRatio ?: 1f
                     val newZoom = currentZoomRatio * detector.scaleFactor
                     camera?.cameraControl?.setZoomRatio(
-                        newZoom.coerceIn(zoom?.minZoomRatio ?: 1f, zoom?.maxZoomRatio ?: 1f))
+                        newZoom.coerceIn(
+                            zoom?.minZoomRatio ?: 1f,
+                            zoom?.maxZoomRatio ?: 1f
+                        )
+                    )
                     return true
                 }
             })
 
-        previewView.setOnTouchListener { view, event ->
+        previewView.setOnTouchListener { _, event ->
             scaleGestureDetector.onTouchEvent(event)
-            // התמקדות בלחיצה
             if (event.action == MotionEvent.ACTION_UP) {
                 val factory = previewView.meteringPointFactory
                 val point = factory.createPoint(event.x, event.y)
@@ -143,7 +158,7 @@ class MainActivity : AppCompatActivity() {
         zoom10x.setOnClickListener { setZoom(0.9f); highlightZoom(zoom10x) }
 
         btnGallery.setOnClickListener {
-            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW)
+            val intent = Intent(Intent.ACTION_VIEW)
             intent.type = "image/*"
             startActivity(intent)
         }
@@ -167,10 +182,16 @@ class MainActivity : AppCompatActivity() {
         }
         when (mode) {
             "דיוק" -> { modeFocus.setTextColor(Color.WHITE); modeFocus.textSize = 16f }
-            "תמונה" -> { modePhoto.setTextColor(Color.WHITE); modePhoto.textSize = 16f
-                btnCapture.setBackgroundColor(Color.WHITE) }
-            "וידאו" -> { modeVideo.setTextColor(Color.WHITE); modeVideo.textSize = 16f
-                btnCapture.setBackgroundColor(Color.RED) }
+            "תמונה" -> {
+                modePhoto.setTextColor(Color.WHITE)
+                modePhoto.textSize = 16f
+                btnCapture.setBackgroundColor(Color.WHITE)
+            }
+            "וידאו" -> {
+                modeVideo.setTextColor(Color.WHITE)
+                modeVideo.textSize = 16f
+                btnCapture.setBackgroundColor(Color.RED)
+            }
             else -> { modeMore.setTextColor(Color.WHITE); modeMore.textSize = 16f }
         }
         startCamera()
@@ -201,7 +222,10 @@ class MainActivity : AppCompatActivity() {
 
             imageCapture = ImageCapture.Builder()
                 .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
-                .setFlashMode(if (flashEnabled) ImageCapture.FLASH_MODE_ON else ImageCapture.FLASH_MODE_OFF)
+                .setFlashMode(
+                    if (flashEnabled) ImageCapture.FLASH_MODE_ON
+                    else ImageCapture.FLASH_MODE_OFF
+                )
                 .build()
 
             val recorder = Recorder.Builder()
@@ -209,14 +233,17 @@ class MainActivity : AppCompatActivity() {
                 .build()
             videoCapture = VideoCapture.withOutput(recorder)
 
-            // ניתוח פנים
             imageAnalysis = ImageAnalysis.Builder()
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .build()
+
             imageAnalysis!!.setAnalyzer(cameraExecutor) { imageProxy ->
                 val mediaImage = imageProxy.image
                 if (mediaImage != null) {
-                    val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+                    val image = InputImage.fromMediaImage(
+                        mediaImage,
+                        imageProxy.imageInfo.rotationDegrees
+                    )
                     faceDetector.process(image)
                         .addOnSuccessListener { faces ->
                             overlayView.setFaces(faces, imageProxy.width, imageProxy.height)
@@ -231,7 +258,8 @@ class MainActivity : AppCompatActivity() {
             try {
                 cameraProvider.unbindAll()
                 camera = cameraProvider.bindToLifecycle(
-                    this, cameraSelector, preview, imageCapture, videoCapture, imageAnalysis)
+                    this, cameraSelector, preview, imageCapture, videoCapture, imageAnalysis
+                )
                 camera?.cameraControl?.setLinearZoom(currentZoom)
             } catch (e: Exception) {
                 Toast.makeText(this, "שגיאה: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -248,17 +276,23 @@ class MainActivity : AppCompatActivity() {
             put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/UltraVision")
         }
         val outputOptions = ImageCapture.OutputFileOptions.Builder(
-            contentResolver, MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues).build()
+            contentResolver,
+            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+            contentValues
+        ).build()
 
-        imageCapture.takePicture(outputOptions, ContextCompat.getMainExecutor(this),
+        imageCapture.takePicture(
+            outputOptions,
+            ContextCompat.getMainExecutor(this),
             object : ImageCapture.OnImageSavedCallback {
                 override fun onImageSaved(output: ImageCapture.OutputFileResults) {
-                    Toast.makeText(baseContext, "📸 נשמר!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(baseContext, "📸 נשמר לגלריה!", Toast.LENGTH_SHORT).show()
                 }
                 override fun onError(e: ImageCaptureException) {
                     Toast.makeText(baseContext, "שגיאה: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
-            })
+            }
+        )
     }
 
     private fun toggleVideo() {
@@ -266,7 +300,7 @@ class MainActivity : AppCompatActivity() {
             recording?.stop()
             isRecording = false
             btnCapture.setBackgroundColor(Color.WHITE)
-            Toast.makeText(this, "⏹ נשמר!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "⏹ וידאו נשמר!", Toast.LENGTH_SHORT).show()
         } else {
             val name = "UltraVision_${System.currentTimeMillis()}"
             val contentValues = ContentValues().apply {
@@ -275,14 +309,17 @@ class MainActivity : AppCompatActivity() {
                 put(MediaStore.Video.Media.RELATIVE_PATH, "Movies/UltraVision")
             }
             val output = MediaStoreOutputOptions.Builder(
-                contentResolver, MediaStore.Video.Media.EXTERNAL_CONTENT_URI)
-                .setContentValues(contentValues).build()
+                contentResolver,
+                MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+            ).setContentValues(contentValues).build()
 
             recording = videoCapture?.output?.prepareRecording(this, output)
                 ?.apply {
-                    if (ContextCompat.checkSelfPermission(this@MainActivity,
-                            Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED)
-                        withAudioEnabled()
+                    if (ContextCompat.checkSelfPermission(
+                            this@MainActivity,
+                            Manifest.permission.RECORD_AUDIO
+                        ) == PackageManager.PERMISSION_GRANTED
+                    ) withAudioEnabled()
                 }?.start(ContextCompat.getMainExecutor(this)) { }
 
             isRecording = true
@@ -301,14 +338,22 @@ class MainActivity : AppCompatActivity() {
         flashEnabled = !flashEnabled
         camera?.cameraControl?.enableTorch(flashEnabled)
         btnFlash.alpha = if (flashEnabled) 1.0f else 0.5f
-        Toast.makeText(this, if (flashEnabled) "💡 פנס פעיל" else "פנס כבוי", Toast.LENGTH_SHORT).show()
+        Toast.makeText(
+            this,
+            if (flashEnabled) "💡 פנס פעיל" else "פנס כבוי",
+            Toast.LENGTH_SHORT
+        ).show()
     }
 
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
         ContextCompat.checkSelfPermission(baseContext, it) == PackageManager.PERMISSION_GRANTED
     }
 
-    override fun onRequestPermissionsResult(code: Int, perms: Array<String>, results: IntArray) {
+    override fun onRequestPermissionsResult(
+        code: Int,
+        perms: Array<String>,
+        results: IntArray
+    ) {
         super.onRequestPermissionsResult(code, perms, results)
         if (code == 10 && allPermissionsGranted()) startCamera()
         else Toast.makeText(this, "נדרשות הרשאות", Toast.LENGTH_LONG).show()
