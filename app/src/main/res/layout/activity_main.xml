@@ -11,123 +11,99 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>
 
-    <!-- סרגל מצבים עליון -->
-    <HorizontalScrollView
-        android:id="@+id/modesScroll"
+    <!-- אייקוני כלים עליונים -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:scrollbars="none"
-        android:layout_marginTop="16dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="16dp"
+        android:paddingTop="12dp"
+        app:layout_constraintTop_toTopOf="parent">
 
-        <LinearLayout
-            android:id="@+id/modesContainer"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:paddingHorizontal="16dp"
-            android:gravity="center_vertical">
+        <ImageButton
+            android:id="@+id/btnFlash"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@android:color/transparent"
+            android:src="@android:drawable/btn_star_big_off"
+            android:tint="#FFFFFF"/>
 
-            <TextView
-                android:id="@+id/modeVideo"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="וידאו"
-                android:textColor="#AAAAAA"
-                android:textSize="15sp"
-                android:paddingHorizontal="16dp"
-                android:paddingVertical="8dp"/>
+        <Space android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1"/>
 
-            <TextView
-                android:id="@+id/modePhoto"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="תמונה"
-                android:textColor="#FFFFFF"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:paddingHorizontal="16dp"
-                android:paddingVertical="8dp"/>
+        <ImageButton
+            android:id="@+id/btnFlip"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@android:color/transparent"
+            android:src="@android:drawable/ic_menu_rotate"
+            android:tint="#FFFFFF"/>
 
-            <TextView
-                android:id="@+id/modePortrait"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="פורטרט"
-                android:textColor="#AAAAAA"
-                android:textSize="15sp"
-                android:paddingHorizontal="16dp"
-                android:paddingVertical="8dp"/>
-
-            <TextView
-                android:id="@+id/modeNight"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="לילה"
-                android:textColor="#AAAAAA"
-                android:textSize="15sp"
-                android:paddingHorizontal="16dp"
-                android:paddingVertical="8dp"/>
-
-            <TextView
-                android:id="@+id/modePanorama"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="פנורמה"
-                android:textColor="#AAAAAA"
-                android:textSize="15sp"
-                android:paddingHorizontal="16dp"
-                android:paddingVertical="8dp"/>
-
-        </LinearLayout>
-    </HorizontalScrollView>
+    </LinearLayout>
 
     <!-- כפתורי זום -->
     <LinearLayout
-        android:id="@+id/zoomButtons"
+        android:id="@+id/zoomBar"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_height="48dp"
         android:orientation="horizontal"
-        android:background="#66000000"
-        android:paddingHorizontal="8dp"
-        android:paddingVertical="4dp"
-        app:layout_constraintBottom_toTopOf="@id/bottomBar"
+        android:background="#99000000"
+        android:paddingHorizontal="4dp"
+        android:gravity="center_vertical"
+        app:layout_constraintBottom_toTopOf="@id/modesBar"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginBottom="16dp">
 
-        <TextView
-            android:id="@+id/zoom1x"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:text="1×"
-            android:textColor="#FFFFFF"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:gravity="center"
+        <TextView android:id="@+id/zoomPt6"
+            android:layout_width="52dp" android:layout_height="40dp"
+            android:text=".6" android:textColor="#AAAAAA" android:textSize="15sp"
+            android:gravity="center"/>
+        <TextView android:id="@+id/zoom1x"
+            android:layout_width="52dp" android:layout_height="40dp"
+            android:text="1×" android:textColor="#FFFFFF" android:textSize="15sp"
+            android:textStyle="bold" android:gravity="center"
             android:background="#44FFFFFF"/>
+        <TextView android:id="@+id/zoom2x"
+            android:layout_width="52dp" android:layout_height="40dp"
+            android:text="2" android:textColor="#AAAAAA" android:textSize="15sp"
+            android:gravity="center"/>
+        <TextView android:id="@+id/zoom3x"
+            android:layout_width="52dp" android:layout_height="40dp"
+            android:text="3" android:textColor="#AAAAAA" android:textSize="15sp"
+            android:gravity="center"/>
+        <TextView android:id="@+id/zoom10x"
+            android:layout_width="52dp" android:layout_height="40dp"
+            android:text="10" android:textColor="#AAAAAA" android:textSize="15sp"
+            android:gravity="center"/>
 
-        <TextView
-            android:id="@+id/zoom2x"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:text="2×"
-            android:textColor="#AAAAAA"
-            android:textSize="14sp"
-            android:gravity="center"
-            android:layout_marginStart="4dp"/>
+    </LinearLayout>
 
-        <TextView
-            android:id="@+id/zoom10x"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:text="10×"
-            android:textColor="#AAAAAA"
-            android:textSize="14sp"
-            android:gravity="center"
-            android:layout_marginStart="4dp"/>
+    <!-- בר מצבים -->
+    <LinearLayout
+        android:id="@+id/modesBar"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:orientation="horizontal"
+        android:gravity="center"
+        app:layout_constraintBottom_toTopOf="@id/bottomBar">
+
+        <TextView android:id="@+id/modeFocus"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="דיוק" android:textColor="#AAAAAA" android:textSize="15sp"
+            android:paddingHorizontal="20dp"/>
+        <TextView android:id="@+id/modePhoto"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="תמונה" android:textColor="#FFFFFF" android:textSize="16sp"
+            android:textStyle="bold" android:paddingHorizontal="20dp"/>
+        <TextView android:id="@+id/modeVideo"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="וידאו" android:textColor="#AAAAAA" android:textSize="15sp"
+            android:paddingHorizontal="20dp"/>
+        <TextView android:id="@+id/modeMore"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="עוד" android:textColor="#AAAAAA" android:textSize="15sp"
+            android:paddingHorizontal="20dp"/>
 
     </LinearLayout>
 
@@ -135,86 +111,42 @@
     <LinearLayout
         android:id="@+id/bottomBar"
         android:layout_width="match_parent"
-        android:layout_height="120dp"
+        android:layout_height="130dp"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:paddingHorizontal="24dp"
+        android:paddingHorizontal="32dp"
         android:background="#CC000000"
         app:layout_constraintBottom_toBottomOf="parent">
 
-        <!-- תמונה אחרונה -->
+        <!-- גלריה -->
         <ImageButton
             android:id="@+id/btnGallery"
-            android:layout_width="56dp"
-            android:layout_height="56dp"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
             android:background="#44FFFFFF"
-            android:src="@android:drawable/ic_menu_gallery"
-            android:scaleType="centerCrop"/>
+            android:src="@android:drawable/ic_menu_gallery"/>
 
-        <!-- כפתור צילום מרכזי -->
-        <FrameLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="center">
+        <Space android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1"/>
 
-            <View
-                android:layout_width="84dp"
-                android:layout_height="84dp"
-                android:background="@android:color/transparent"
-                android:layout_gravity="center"/>
-
-            <ImageButton
-                android:id="@+id/btnCapture"
-                android:layout_width="72dp"
-                android:layout_height="72dp"
-                android:background="@android:color/white"
-                android:src="@android:drawable/ic_menu_camera"
-                android:layout_gravity="center"/>
-
-        </FrameLayout>
-
-        <!-- כפתור הפיכת מצלמה -->
+        <!-- כפתור צילום עגול -->
         <ImageButton
-            android:id="@+id/btnFlip"
-            android:layout_width="56dp"
-            android:layout_height="56dp"
-            android:background="@android:color/transparent"
-            android:src="@android:drawable/ic_menu_rotate"/>
+            android:id="@+id/btnCapture"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:background="@android:color/white"
+            android:src="@android:drawable/ic_menu_camera"/>
+
+        <Space android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1"/>
+
+        <!-- הפיכת מצלמה -->
+        <ImageButton
+            android:id="@+id/btnVideo"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:background="#44FFFFFF"
+            android:src="@android:drawable/ic_media_play"/>
 
     </LinearLayout>
-
-    <!-- כפתורי פלאש ועוד בצד -->
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:layout_marginTop="60dp"
-        android:layout_marginEnd="12dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-
-        <ImageButton
-            android:id="@+id/btnFlash"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:background="#66000000"
-            android:src="@android:drawable/btn_star_big_off"
-            android:layout_marginBottom="12dp"/>
-
-    </LinearLayout>
-
-    <!-- כפתור וידאו בצד שמאל של הבר -->
-    <ImageButton
-        android:id="@+id/btnVideo"
-        android:layout_width="56dp"
-        android:layout_height="56dp"
-        android:background="#CC0000"
-        android:src="@android:drawable/ic_media_play"
-        android:layout_marginBottom="32dp"
-        android:layout_marginStart="24dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"/>
 
     <!-- SeekBar זום מוסתר -->
     <SeekBar
@@ -225,4 +157,4 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"/>
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+</androidx.constraintlayout.widget.ConstraintLayout
