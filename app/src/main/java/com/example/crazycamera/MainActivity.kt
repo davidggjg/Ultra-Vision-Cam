@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.Bundle
 import android.provider.MediaStore
+import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.WindowManager
 import android.widget.*
@@ -34,6 +35,7 @@ import com.google.mlkit.vision.face.FaceDetector
 import com.google.mlkit.vision.face.FaceDetectorOptions
 import java.util.concurrent.Executors
 import android.view.ScaleGestureDetector
+import kotlin.math.abs
 
 class MainActivity : AppCompatActivity() {
 
@@ -55,6 +57,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var zoom10x: TextView
 
     private var camera: Camera? = null
+    private var cameraProvider: ProcessCameraProvider? = null
     private var imageCapture: ImageCapture? = null
     private var videoCapture: VideoCapture<Recorder>? = null
     private var imageAnalysis: ImageAnalysis? = null
@@ -65,7 +68,9 @@ class MainActivity : AppCompatActivity() {
     private var flashEnabled = false
     private var currentMode = "תמונה"
     private var currentZoom = 0.1f
+
     private lateinit var scaleGestureDetector: ScaleGestureDetector
+    private lateinit var gestureDetector: GestureDetector
     private lateinit var faceDetector: FaceDetector
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -92,12 +97,13 @@ class MainActivity : AppCompatActivity() {
         zoom3x = findViewById(R.id.zoom3x)
         zoom10x = findViewById(R.id.zoom10x)
 
-        val options = FaceDetectorOptions.Builder()
-            .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_FAST)
-            .setLandmarkMode(FaceDetectorOptions.LANDMARK_MODE_ALL)
-            .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_ALL)
-            .build()
-        faceDetector = FaceDetection.getClient(options)
+        faceDetector = FaceDetection.getClient(
+            FaceDetectorOptions.Builder()
+                .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_FAST)
+                .setLandmarkMode(FaceDetectorOptions.LANDMARK_MODE_ALL)
+                .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_ALL)
+                .build()
+        )
 
         scaleGestureDetector = ScaleGestureDetector(this,
             object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
@@ -110,10 +116,27 @@ class MainActivity : AppCompatActivity() {
                 }
             })
 
+        gestureDetector = GestureDetector(this,
+            object : GestureDetector.SimpleOnGestureListener() {
+                override fun onFling(e1: MotionEvent?, e2: MotionEvent,
+                    vx: Float, vy: Float): Boolean {
+                    val dy = (e2.y) - (e1?.y ?: 0f)
+                    val dx = (e2.x) - (e1?.x ?: 0f)
+                    if (abs(dy) > abs(dx) && abs(dy) > 150) {
+                        flipCamera()
+                        return true
+                    }
+                    return false
+                }
+            })
+
         previewView.setOnTouchListener { _, event ->
             scaleGestureDetector.onTouchEvent(event)
-            if (event.action == MotionEvent.ACTION_UP) {
-                val point = previewView.meteringPointFactory.createPoint(event.x, event.y)
+            gestureDetector.onTouchEvent(event)
+            if (event.action == MotionEvent.ACTION_UP &&
+                !scaleGestureDetector.isInProgress) {
+                val point = previewView.meteringPointFactory
+                    .createPoint(event.x, event.y)
                 camera?.cameraControl?.startFocusAndMetering(
                     FocusMeteringAction.Builder(point).build())
             }
@@ -146,8 +169,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showMoreModes() {
-        val modes = arrayOf("לילה 🌙", "פנורמה 🌅", "מזון 🍔", "הילוך איטי 🐢",
-            "טיים-לאפס ⏩", "מקצועי 📷", "פורטרט 👤")
+        val modes = arrayOf("לילה 🌙", "פנורמה 🌅", "מזון 🍔",
+            "הילוך איטי 🐢", "טיים-לאפס ⏩", "מקצועי 📷",
+            "פורטרט 👤", "HDR 🌈", "הקלטה כפולה 📹")
         android.app.AlertDialog.Builder(this)
             .setTitle("בחר מצב")
             .setItems(modes) { _, which ->
@@ -163,10 +187,14 @@ class MainActivity : AppCompatActivity() {
         }
         when (mode) {
             "דיוק" -> { modeFocus.setTextColor(Color.WHITE); modeFocus.textSize = 14f }
-            "תמונה" -> { modePhoto.setTextColor(Color.WHITE); modePhoto.textSize = 14f
-                btnCapture.setBackgroundResource(R.drawable.circle_white) }
-            "וידאו" -> { modeVideo.setTextColor(Color.WHITE); modeVideo.textSize = 14f
-                btnCapture.setBackgroundColor(Color.RED) }
+            "תמונה" -> {
+                modePhoto.setTextColor(Color.WHITE); modePhoto.textSize = 14f
+                btnCapture.setBackgroundResource(R.drawable.circle_white)
+            }
+            "וידאו" -> {
+                modeVideo.setTextColor(Color.WHITE); modeVideo.textSize = 14f
+                btnCapture.setBackgroundColor(Color.RED)
+            }
             else -> { modeMore.setTextColor(Color.WHITE); modeMore.textSize = 14f }
         }
     }
@@ -186,50 +214,69 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startCamera() {
-        val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
-        cameraProviderFuture.addListener({
-            val cameraProvider = cameraProviderFuture.get()
-            val preview = Preview.Builder().build().also {
-                it.setSurfaceProvider(previewView.surfaceProvider)
-            }
-            imageCapture = ImageCapture.Builder()
-                .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
-                .setFlashMode(if (flashEnabled) ImageCapture.FLASH_MODE_ON
-                    else ImageCapture.FLASH_MODE_OFF)
-                .build()
+        ProcessCameraProvider.getInstance(this).also { future ->
+            future.addListener({
+                cameraProvider = future.get()
+                bindCamera()
+            }, ContextCompat.getMainExecutor(this))
+        }
+    }
 
-            val recorder = Recorder.Builder()
-                .setQualitySelector(QualitySelector.from(Quality.HIGHEST))
-                .build()
-            videoCapture = VideoCapture.withOutput(recorder)
+    private fun bindCamera() {
+        val cp = cameraProvider ?: return
 
-            imageAnalysis = ImageAnalysis.Builder()
-                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                .build()
-            imageAnalysis!!.setAnalyzer(cameraExecutor) { imageProxy ->
-                val mediaImage = imageProxy.image
-                if (mediaImage != null) {
-                    faceDetector.process(
-                        InputImage.fromMediaImage(mediaImage,
-                            imageProxy.imageInfo.rotationDegrees))
-                        .addOnSuccessListener { faces ->
-                            overlayView.setFaces(faces, imageProxy.width, imageProxy.height,
-                                lensFacing == CameraSelector.LENS_FACING_FRONT)
-                        }
-                        .addOnCompleteListener { imageProxy.close() }
-                } else imageProxy.close()
-            }
+        val preview = Preview.Builder().build().also {
+            it.setSurfaceProvider(previewView.surfaceProvider)
+        }
 
-            try {
-                cameraProvider.unbindAll()
-                camera = cameraProvider.bindToLifecycle(
-                    this, CameraSelector.Builder().requireLensFacing(lensFacing).build(),
-                    preview, imageCapture, videoCapture, imageAnalysis)
-                camera?.cameraControl?.setLinearZoom(currentZoom)
-            } catch (e: Exception) {
-                Toast.makeText(this, "שגיאה: ${e.message}", Toast.LENGTH_SHORT).show()
+        // MINIMIZE_LATENCY = מצלמה מהירה יותר
+        imageCapture = ImageCapture.Builder()
+            .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+            .setJpegQuality(95)
+            .build()
+
+        val recorder = Recorder.Builder()
+            .setQualitySelector(QualitySelector.from(Quality.HIGHEST))
+            .build()
+        videoCapture = VideoCapture.withOutput(recorder)
+
+        imageAnalysis = ImageAnalysis.Builder()
+            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+            .build()
+        imageAnalysis!!.setAnalyzer(cameraExecutor) { proxy ->
+            val img = proxy.image
+            if (img != null) {
+                faceDetector.process(InputImage.fromMediaImage(img,
+                    proxy.imageInfo.rotationDegrees))
+                    .addOnSuccessListener { faces ->
+                        overlayView.setFaces(faces, proxy.width, proxy.height,
+                            lensFacing == CameraSelector.LENS_FACING_FRONT)
+                    }
+                    .addOnCompleteListener { proxy.close() }
+            } else proxy.close()
+        }
+
+        try {
+            cp.unbindAll()
+            camera = cp.bindToLifecycle(this,
+                CameraSelector.Builder().requireLensFacing(lensFacing).build(),
+                preview, imageCapture, videoCapture, imageAnalysis)
+            camera?.cameraControl?.setLinearZoom(currentZoom)
+
+            // שחזור פנס אחרי החלפת מצלמה
+            if (flashEnabled) {
+                if (camera?.cameraInfo?.hasFlashUnit() == true) {
+                    camera?.cameraControl?.enableTorch(true)
+                } else {
+                    flashEnabled = false
+                    runOnUiThread {
+                        btnFlash.setImageResource(android.R.drawable.btn_star_big_off)
+                    }
+                }
             }
-        }, ContextCompat.getMainExecutor(this))
+        } catch (e: Exception) {
+            Toast.makeText(this, "שגיאה: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun takePhoto() {
@@ -249,7 +296,7 @@ class MainActivity : AppCompatActivity() {
                     Toast.makeText(baseContext, "📸 נשמר!", Toast.LENGTH_SHORT).show()
                 }
                 override fun onError(e: ImageCaptureException) {
-                    Toast.makeText(baseContext, "שגיאה", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(baseContext, "שגיאה בצילום", Toast.LENGTH_SHORT).show()
                 }
             })
     }
@@ -273,7 +320,8 @@ class MainActivity : AppCompatActivity() {
                     .setContentValues(cv).build())
                 ?.apply {
                     if (ContextCompat.checkSelfPermission(this@MainActivity,
-                            Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED)
+                            Manifest.permission.RECORD_AUDIO) ==
+                        PackageManager.PERMISSION_GRANTED)
                         withAudioEnabled()
                 }?.start(ContextCompat.getMainExecutor(this)) { }
             isRecording = true
@@ -285,24 +333,27 @@ class MainActivity : AppCompatActivity() {
     private fun flipCamera() {
         lensFacing = if (lensFacing == CameraSelector.LENS_FACING_BACK)
             CameraSelector.LENS_FACING_FRONT else CameraSelector.LENS_FACING_BACK
-        startCamera()
+        bindCamera()
     }
 
     private fun toggleFlash() {
+        if (camera?.cameraInfo?.hasFlashUnit() != true) {
+            Toast.makeText(this, "אין פנס במצלמה זו", Toast.LENGTH_SHORT).show()
+            return
+        }
         flashEnabled = !flashEnabled
         camera?.cameraControl?.enableTorch(flashEnabled)
         btnFlash.setImageResource(
             if (flashEnabled) android.R.drawable.btn_star_big_on
             else android.R.drawable.btn_star_big_off)
-        Toast.makeText(this, if (flashEnabled) "💡 פנס פעיל" else "פנס כבוי",
-            Toast.LENGTH_SHORT).show()
     }
 
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
         ContextCompat.checkSelfPermission(baseContext, it) == PackageManager.PERMISSION_GRANTED
     }
 
-    override fun onRequestPermissionsResult(code: Int, perms: Array<String>, results: IntArray) {
+    override fun onRequestPermissionsResult(code: Int, perms: Array<String>,
+        results: IntArray) {
         super.onRequestPermissionsResult(code, perms, results)
         if (code == 10 && allPermissionsGranted()) startCamera()
         else Toast.makeText(this, "נדרשות הרשאות", Toast.LENGTH_LONG).show()
