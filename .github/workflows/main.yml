@@ -1,5 +1,4 @@
 name: Build Ultra Vision APK
-
 on:
   push:
     branches: [ main ]
