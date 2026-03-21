@@ -6,9 +6,12 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.provider.MediaStore
 import android.view.GestureDetector
 import android.view.MotionEvent
+import android.view.View
 import android.view.WindowManager
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
@@ -44,6 +47,14 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnFlip: ImageButton
     private lateinit var btnFlash: ImageButton
     private lateinit var btnGallery: ImageButton
+    private lateinit var btnRecord: ImageButton
+    private lateinit var btnPause: ImageButton
+    private lateinit var btnStop: ImageButton
+    private lateinit var btnFlipVideo: ImageButton
+    private lateinit var bottomBar: LinearLayout
+    private lateinit var videoBar: LinearLayout
+    private lateinit var flashOverlay: View
+    private lateinit var recordingTimer: TextView
     private lateinit var overlayView: FaceOverlayView
     private lateinit var zoomSeekBar: SeekBar
     private lateinit var modeFocus: TextView
@@ -65,9 +76,14 @@ class MainActivity : AppCompatActivity() {
     private var cameraExecutor = Executors.newSingleThreadExecutor()
     private var lensFacing = CameraSelector.LENS_FACING_BACK
     private var isRecording = false
+    private var isPaused = false
     private var flashEnabled = false
     private var currentMode = "תמונה"
     private var currentZoom = 0.1f
+
+    private val handler = Handler(Looper.getMainLooper())
+    private var timerSeconds = 0
+    private var timerRunnable: Runnable? = null
 
     private lateinit var scaleGestureDetector: ScaleGestureDetector
     private lateinit var gestureDetector: GestureDetector
@@ -85,6 +101,14 @@ class MainActivity : AppCompatActivity() {
         btnFlip = findViewById(R.id.btnFlip)
         btnFlash = findViewById(R.id.btnFlash)
         btnGallery = findViewById(R.id.btnGallery)
+        btnRecord = findViewById(R.id.btnRecord)
+        btnPause = findViewById(R.id.btnPause)
+        btnStop = findViewById(R.id.btnStop)
+        btnFlipVideo = findViewById(R.id.btnFlipVideo)
+        bottomBar = findViewById(R.id.bottomBar)
+        videoBar = findViewById(R.id.videoBar)
+        flashOverlay = findViewById(R.id.flashOverlay)
+        recordingTimer = findViewById(R.id.recordingTimer)
         overlayView = findViewById(R.id.overlayView)
         zoomSeekBar = findViewById(R.id.zoomSeekBar)
         modeFocus = findViewById(R.id.modeFocus)
@@ -111,8 +135,7 @@ class MainActivity : AppCompatActivity() {
                     val zoom = camera?.cameraInfo?.zoomState?.value
                     val newZoom = (zoom?.zoomRatio ?: 1f) * detector.scaleFactor
                     camera?.cameraControl?.setZoomRatio(
-                        newZoom.coerceIn(zoom?.minZoomRatio ?: 1f,
-                            zoom?.maxZoomRatio ?: 1f))
+                        newZoom.coerceIn(zoom?.minZoomRatio ?: 1f, zoom?.maxZoomRatio ?: 1f))
                     return true
                 }
             })
@@ -136,8 +159,7 @@ class MainActivity : AppCompatActivity() {
             gestureDetector.onTouchEvent(event)
             if (event.action == MotionEvent.ACTION_UP &&
                 !scaleGestureDetector.isInProgress) {
-                val point = previewView.meteringPointFactory
-                    .createPoint(event.x, event.y)
+                val point = previewView.meteringPointFactory.createPoint(event.x, event.y)
                 camera?.cameraControl?.startFocusAndMetering(
                     FocusMeteringAction.Builder(point).build())
             }
@@ -147,16 +169,19 @@ class MainActivity : AppCompatActivity() {
         if (allPermissionsGranted()) startCamera()
         else ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, 10)
 
-        btnCapture.setOnClickListener {
-            if (currentMode == "וידאו") toggleVideo() else takePhoto()
-        }
+        // כפתורי תמונה
+        btnCapture.setOnClickListener { takePhoto() }
         btnFlip.setOnClickListener { flipCamera() }
         btnFlash.setOnClickListener { toggleFlash() }
 
-        // כפתור הגדרות - גלגל שיניים
-        findViewById<ImageButton>(R.id.btnSettings).setOnClickListener {
-            showSettings()
-        }
+        // כפתורי וידאו
+        btnRecord.setOnClickListener { startRecording() }
+        btnPause.setOnClickListener { pauseRecording() }
+        btnStop.setOnClickListener { stopRecording() }
+        btnFlipVideo.setOnClickListener { flipCamera() }
+
+        // הגדרות
+        findViewById<ImageButton>(R.id.btnSettings).setOnClickListener { showSettings() }
 
         modeFocus.setOnClickListener { switchMode("דיוק") }
         modePhoto.setOnClickListener { switchMode("תמונה") }
@@ -175,24 +200,25 @@ class MainActivity : AppCompatActivity() {
                     MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
                 startActivity(intent)
             } catch (e: Exception) {
-                Toast.makeText(this, "לא נמצאה גלריה", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "שגיאה בפתיחת גלריה", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
     private fun showSettings() {
-        val options = arrayOf(
-            "איכות תמונה: גבוהה",
-            "יחס תמונה: 4:3",
-            "יחס תמונה: 16:9",
-            "טיימר: כבוי",
-            "טיימר: 3 שניות",
-            "טיימר: 10 שניות"
+        val items = arrayOf(
+            "🖼️ יחס תמונה: 4:3",
+            "🖼️ יחס תמונה: 16:9",
+            "⏱️ טיימר: כבוי",
+            "⏱️ טיימר: 3 שניות",
+            "⏱️ טיימר: 10 שניות",
+            "📊 רשת קומפוזיציה: כן/לא",
+            "🔊 צליל צילום: כן/לא"
         )
         android.app.AlertDialog.Builder(this)
-            .setTitle("⚙️ הגדרות")
-            .setItems(options) { _, which ->
-                Toast.makeText(this, options[which], Toast.LENGTH_SHORT).show()
+            .setTitle("⚙️ הגדרות מצלמה")
+            .setItems(items) { _, which ->
+                Toast.makeText(this, items[which], Toast.LENGTH_SHORT).show()
             }.show()
     }
 
@@ -207,10 +233,20 @@ class MainActivity : AppCompatActivity() {
             "פורטרט 👤",
             "HDR 🌈"
         )
+        val videoModes = setOf("הילוך איטי 🐢", "טיים-לאפס ⏩")
+
         android.app.AlertDialog.Builder(this)
             .setTitle("בחר מצב")
             .setItems(modes) { _, which ->
-                Toast.makeText(this, "מצב: ${modes[which]}", Toast.LENGTH_SHORT).show()
+                val selected = modes[which]
+                if (selected in videoModes) {
+                    // מצבי וידאו - עבור לוידאו אוטומטית
+                    switchMode("וידאו")
+                    modeVideo.setTextColor(Color.WHITE)
+                    Toast.makeText(this, "מצב: $selected", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, "מצב: $selected", Toast.LENGTH_SHORT).show()
+                }
             }.show()
     }
 
@@ -222,22 +258,26 @@ class MainActivity : AppCompatActivity() {
         }
         when (mode) {
             "דיוק" -> {
-                modeFocus.setTextColor(Color.WHITE)
-                modeFocus.textSize = 14f
+                modeFocus.setTextColor(Color.WHITE); modeFocus.textSize = 14f
+                bottomBar.visibility = View.VISIBLE
+                videoBar.visibility = View.GONE
             }
             "תמונה" -> {
-                modePhoto.setTextColor(Color.WHITE)
-                modePhoto.textSize = 14f
-                btnCapture.setBackgroundResource(R.drawable.circle_white)
+                modePhoto.setTextColor(Color.WHITE); modePhoto.textSize = 14f
+                bottomBar.visibility = View.VISIBLE
+                videoBar.visibility = View.GONE
             }
             "וידאו" -> {
-                modeVideo.setTextColor(Color.WHITE)
-                modeVideo.textSize = 14f
-                btnCapture.setBackgroundColor(Color.RED)
+                modeVideo.setTextColor(Color.WHITE); modeVideo.textSize = 14f
+                bottomBar.visibility = View.GONE
+                videoBar.visibility = View.VISIBLE
+                // כפתור הקלטה אדום
+                btnRecord.setBackgroundColor(Color.RED)
             }
             else -> {
-                modeMore.setTextColor(Color.WHITE)
-                modeMore.textSize = 14f
+                modeMore.setTextColor(Color.WHITE); modeMore.textSize = 14f
+                bottomBar.visibility = View.VISIBLE
+                videoBar.visibility = View.GONE
             }
         }
     }
@@ -299,10 +339,7 @@ class MainActivity : AppCompatActivity() {
                 CameraSelector.Builder().requireLensFacing(lensFacing).build(),
                 preview, imageCapture, videoCapture, imageAnalysis)
             camera?.cameraControl?.setLinearZoom(currentZoom)
-            // פנס - שחזור אחרי החלפת מצלמה
-            if (flashEnabled) {
-                camera?.cameraControl?.enableTorch(true)
-            }
+            if (flashEnabled) camera?.cameraControl?.enableTorch(true)
         } catch (e: Exception) {
             Toast.makeText(this, "שגיאה: ${e.message}", Toast.LENGTH_SHORT).show()
         }
@@ -310,6 +347,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun takePhoto() {
         val ic = imageCapture ?: return
+        // אנימציית פלאש
+        flashOverlay.visibility = View.VISIBLE
+        handler.postDelayed({ flashOverlay.visibility = View.GONE }, 150)
+
         val name = "UltraVision_${System.currentTimeMillis()}"
         val cv = ContentValues().apply {
             put(MediaStore.MediaColumns.DISPLAY_NAME, name)
@@ -323,6 +364,8 @@ class MainActivity : AppCompatActivity() {
             object : ImageCapture.OnImageSavedCallback {
                 override fun onImageSaved(o: ImageCapture.OutputFileResults) {
                     Toast.makeText(baseContext, "📸 נשמר!", Toast.LENGTH_SHORT).show()
+                    // עדכן תמונה אחרונה בגלריה
+                    updateGalleryThumbnail()
                 }
                 override fun onError(e: ImageCaptureException) {
                     Toast.makeText(baseContext, "שגיאה בצילום", Toast.LENGTH_SHORT).show()
@@ -330,33 +373,89 @@ class MainActivity : AppCompatActivity() {
             })
     }
 
-    private fun toggleVideo() {
-        if (isRecording) {
-            recording?.stop()
-            isRecording = false
-            btnCapture.setBackgroundResource(R.drawable.circle_white)
-            Toast.makeText(this, "⏹ נשמר!", Toast.LENGTH_SHORT).show()
-        } else {
-            val name = "UltraVision_${System.currentTimeMillis()}"
-            val cv = ContentValues().apply {
-                put(MediaStore.MediaColumns.DISPLAY_NAME, name)
-                put(MediaStore.MediaColumns.MIME_TYPE, "video/mp4")
-                put(MediaStore.Video.Media.RELATIVE_PATH, "Movies/UltraVision")
+    private fun updateGalleryThumbnail() {
+        val cursor = contentResolver.query(
+            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+            arrayOf(MediaStore.Images.Media._ID),
+            null, null,
+            "${MediaStore.Images.Media.DATE_ADDED} DESC"
+        )
+        cursor?.use {
+            if (it.moveToFirst()) {
+                val id = it.getLong(0)
+                val uri = android.net.Uri.withAppendedPath(
+                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id.toString())
+                runOnUiThread {
+                    btnGallery.setImageURI(uri)
+                }
             }
-            recording = videoCapture?.output?.prepareRecording(this,
-                MediaStoreOutputOptions.Builder(contentResolver,
-                    MediaStore.Video.Media.EXTERNAL_CONTENT_URI)
-                    .setContentValues(cv).build())
-                ?.apply {
-                    if (ContextCompat.checkSelfPermission(this@MainActivity,
-                            Manifest.permission.RECORD_AUDIO) ==
-                        PackageManager.PERMISSION_GRANTED)
-                        withAudioEnabled()
-                }?.start(ContextCompat.getMainExecutor(this)) { }
-            isRecording = true
-            btnCapture.setBackgroundColor(Color.RED)
-            Toast.makeText(this, "🔴 מקליט...", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    private fun startRecording() {
+        val name = "UltraVision_${System.currentTimeMillis()}"
+        val cv = ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, name)
+            put(MediaStore.MediaColumns.MIME_TYPE, "video/mp4")
+            put(MediaStore.Video.Media.RELATIVE_PATH, "Movies/UltraVision")
+        }
+        recording = videoCapture?.output?.prepareRecording(this,
+            MediaStoreOutputOptions.Builder(contentResolver,
+                MediaStore.Video.Media.EXTERNAL_CONTENT_URI)
+                .setContentValues(cv).build())
+            ?.apply {
+                if (ContextCompat.checkSelfPermission(this@MainActivity,
+                        Manifest.permission.RECORD_AUDIO) ==
+                    PackageManager.PERMISSION_GRANTED)
+                    withAudioEnabled()
+            }?.start(ContextCompat.getMainExecutor(this)) { }
+        isRecording = true
+        btnRecord.setBackgroundColor(Color.parseColor("#FF4444"))
+        // הפעל טיימר
+        timerSeconds = 0
+        recordingTimer.visibility = View.VISIBLE
+        startTimer()
+        Toast.makeText(this, "🔴 מקליט...", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun pauseRecording() {
+        if (!isRecording) return
+        if (!isPaused) {
+            recording?.pause()
+            isPaused = true
+            timerRunnable?.let { handler.removeCallbacks(it) }
+            btnPause.setImageResource(android.R.drawable.ic_media_play)
+        } else {
+            recording?.resume()
+            isPaused = false
+            startTimer()
+            btnPause.setImageResource(android.R.drawable.ic_media_pause)
+        }
+    }
+
+    private fun stopRecording() {
+        recording?.stop()
+        isRecording = false
+        isPaused = false
+        timerRunnable?.let { handler.removeCallbacks(it) }
+        recordingTimer.visibility = View.GONE
+        btnRecord.setBackgroundColor(Color.RED)
+        btnPause.setImageResource(android.R.drawable.ic_media_pause)
+        Toast.makeText(this, "⏹ נשמר!", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun startTimer() {
+        timerRunnable = object : Runnable {
+            override fun run() {
+                timerSeconds++
+                val h = timerSeconds / 3600
+                val m = (timerSeconds % 3600) / 60
+                val s = timerSeconds % 60
+                recordingTimer.text = String.format("%02d:%02d:%02d", h, m, s)
+                handler.postDelayed(this, 1000)
+            }
+        }
+        handler.postDelayed(timerRunnable!!, 1000)
     }
 
     private fun flipCamera() {
@@ -367,7 +466,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun toggleFlash() {
         flashEnabled = !flashEnabled
-        // שימוש ב-CameraX enableTorch - הדרך הנכונה כשהמצלמה פתוחה
         camera?.cameraControl?.enableTorch(flashEnabled)
             ?.addListener({
                 runOnUiThread {
@@ -393,6 +491,7 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         camera?.cameraControl?.enableTorch(false)
+        timerRunnable?.let { handler.removeCallbacks(it) }
         cameraExecutor.shutdown()
     }
 
