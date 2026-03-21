@@ -18,8 +18,9 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      - name: Build Debug APK
+      - name: Create Wrapper and Build
         run: |
+          gradle wrapper --gradle-version 8.2
           chmod +x gradlew
           ./gradlew assembleDebug
 
