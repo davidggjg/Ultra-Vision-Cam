@@ -11,57 +11,218 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>
 
-    <SeekBar
-        android:id="@+id/zoomSeekBar"
-        android:layout_width="200dp"
+    <!-- סרגל מצבים עליון -->
+    <HorizontalScrollView
+        android:id="@+id/modesScroll"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:max="100"
-        android:progress="0"
-        app:layout_constraintBottom_toBottomOf="parent"
+        android:scrollbars="none"
+        android:layout_marginTop="16dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <LinearLayout
+            android:id="@+id/modesContainer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingHorizontal="16dp"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/modeVideo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="וידאו"
+                android:textColor="#AAAAAA"
+                android:textSize="15sp"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="8dp"/>
+
+            <TextView
+                android:id="@+id/modePhoto"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="תמונה"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="8dp"/>
+
+            <TextView
+                android:id="@+id/modePortrait"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="פורטרט"
+                android:textColor="#AAAAAA"
+                android:textSize="15sp"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="8dp"/>
+
+            <TextView
+                android:id="@+id/modeNight"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="לילה"
+                android:textColor="#AAAAAA"
+                android:textSize="15sp"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="8dp"/>
+
+            <TextView
+                android:id="@+id/modePanorama"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="פנורמה"
+                android:textColor="#AAAAAA"
+                android:textSize="15sp"
+                android:paddingHorizontal="16dp"
+                android:paddingVertical="8dp"/>
+
+        </LinearLayout>
+    </HorizontalScrollView>
+
+    <!-- כפתורי זום -->
+    <LinearLayout
+        android:id="@+id/zoomButtons"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="#66000000"
+        android:paddingHorizontal="8dp"
+        android:paddingVertical="4dp"
+        app:layout_constraintBottom_toTopOf="@id/bottomBar"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginBottom="120dp"/>
+        android:layout_marginBottom="16dp">
 
-    <ImageButton
-        android:id="@+id/btnFlash"
-        android:layout_width="56dp"
-        android:layout_height="56dp"
-        android:layout_margin="16dp"
-        android:background="@android:color/transparent"
-        android:src="@android:drawable/btn_star_big_off"
+        <TextView
+            android:id="@+id/zoom1x"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:text="1×"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:background="#44FFFFFF"/>
+
+        <TextView
+            android:id="@+id/zoom2x"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:text="2×"
+            android:textColor="#AAAAAA"
+            android:textSize="14sp"
+            android:gravity="center"
+            android:layout_marginStart="4dp"/>
+
+        <TextView
+            android:id="@+id/zoom10x"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:text="10×"
+            android:textColor="#AAAAAA"
+            android:textSize="14sp"
+            android:gravity="center"
+            android:layout_marginStart="4dp"/>
+
+    </LinearLayout>
+
+    <!-- בר תחתון -->
+    <LinearLayout
+        android:id="@+id/bottomBar"
+        android:layout_width="match_parent"
+        android:layout_height="120dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="24dp"
+        android:background="#CC000000"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <!-- תמונה אחרונה -->
+        <ImageButton
+            android:id="@+id/btnGallery"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:background="#44FFFFFF"
+            android:src="@android:drawable/ic_menu_gallery"
+            android:scaleType="centerCrop"/>
+
+        <!-- כפתור צילום מרכזי -->
+        <FrameLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center">
+
+            <View
+                android:layout_width="84dp"
+                android:layout_height="84dp"
+                android:background="@android:color/transparent"
+                android:layout_gravity="center"/>
+
+            <ImageButton
+                android:id="@+id/btnCapture"
+                android:layout_width="72dp"
+                android:layout_height="72dp"
+                android:background="@android:color/white"
+                android:src="@android:drawable/ic_menu_camera"
+                android:layout_gravity="center"/>
+
+        </FrameLayout>
+
+        <!-- כפתור הפיכת מצלמה -->
+        <ImageButton
+            android:id="@+id/btnFlip"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:background="@android:color/transparent"
+            android:src="@android:drawable/ic_menu_rotate"/>
+
+    </LinearLayout>
+
+    <!-- כפתורי פלאש ועוד בצד -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginTop="60dp"
+        android:layout_marginEnd="12dp"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        app:layout_constraintEnd_toEndOf="parent">
 
-    <ImageButton
-        android:id="@+id/btnFlip"
-        android:layout_width="56dp"
-        android:layout_height="56dp"
-        android:layout_margin="16dp"
-        android:background="@android:color/transparent"
-        android:src="@android:drawable/ic_menu_rotate"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"/>
+        <ImageButton
+            android:id="@+id/btnFlash"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="#66000000"
+            android:src="@android:drawable/btn_star_big_off"
+            android:layout_marginBottom="12dp"/>
 
-    <ImageButton
-        android:id="@+id/btnCapture"
-        android:layout_width="80dp"
-        android:layout_height="80dp"
-        android:layout_marginBottom="32dp"
-        android:background="@android:color/white"
-        android:src="@android:drawable/ic_menu_camera"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+    </LinearLayout>
 
+    <!-- כפתור וידאו בצד שמאל של הבר -->
     <ImageButton
         android:id="@+id/btnVideo"
-        android:layout_width="60dp"
-        android:layout_height="60dp"
-        android:layout_marginBottom="40dp"
-        android:layout_marginEnd="32dp"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
         android:background="#CC0000"
         android:src="@android:drawable/ic_media_play"
+        android:layout_marginBottom="32dp"
+        android:layout_marginStart="24dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        app:layout_constraintStart_toStartOf="parent"/>
+
+    <!-- SeekBar זום מוסתר -->
+    <SeekBar
+        android:id="@+id/zoomSeekBar"
+        android:layout_width="1dp"
+        android:layout_height="1dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
