@@ -16,7 +16,6 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>
 
-    <!-- כלים עליונים -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -30,10 +29,9 @@
             android:id="@+id/btnFlash"
             android:layout_width="44dp"
             android:layout_height="44dp"
-            android:background="#55000000"
+            android:background="@drawable/circle_gray"
             android:src="@android:drawable/btn_star_big_off"
-            android:padding="10dp"
-            android:onClick="toggleFlash"/>
+            android:padding="10dp"/>
 
         <Space android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1"/>
 
@@ -41,13 +39,12 @@
             android:id="@+id/btnSettings"
             android:layout_width="44dp"
             android:layout_height="44dp"
-            android:background="#55000000"
+            android:background="@drawable/circle_gray"
             android:src="@android:drawable/ic_menu_manage"
             android:padding="10dp"/>
 
     </LinearLayout>
 
-    <!-- כפתורי זום -->
     <LinearLayout
         android:id="@+id/zoomBar"
         android:layout_width="wrap_content"
@@ -85,7 +82,6 @@
 
     </LinearLayout>
 
-    <!-- בר מצבים -->
     <LinearLayout
         android:id="@+id/modesBar"
         android:layout_width="match_parent"
@@ -113,7 +109,6 @@
 
     </LinearLayout>
 
-    <!-- בר תחתון -->
     <LinearLayout
         android:id="@+id/bottomBar"
         android:layout_width="match_parent"
@@ -124,18 +119,16 @@
         android:background="#DD000000"
         app:layout_constraintBottom_toBottomOf="parent">
 
-        <!-- גלריה - עיגול -->
         <ImageButton
             android:id="@+id/btnGallery"
             android:layout_width="56dp"
             android:layout_height="56dp"
-            android:background="#33FFFFFF"
+            android:background="@drawable/circle_gray"
             android:src="@android:drawable/ic_menu_gallery"
             android:padding="12dp"/>
 
         <Space android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1"/>
 
-        <!-- כפתור צילום - עיגול כמו סמסונג -->
         <FrameLayout
             android:layout_width="84dp"
             android:layout_height="84dp"
@@ -144,14 +137,14 @@
             <View
                 android:layout_width="84dp"
                 android:layout_height="84dp"
-                android:background="#55FFFFFF"
+                android:background="@drawable/circle_outline"
                 android:layout_gravity="center"/>
 
             <ImageButton
                 android:id="@+id/btnCapture"
                 android:layout_width="70dp"
                 android:layout_height="70dp"
-                android:background="@android:color/white"
+                android:background="@drawable/circle_white"
                 android:src="@null"
                 android:layout_gravity="center"/>
 
@@ -159,12 +152,11 @@
 
         <Space android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1"/>
 
-        <!-- היפוך מצלמה - עיגול -->
         <ImageButton
             android:id="@+id/btnFlip"
             android:layout_width="56dp"
             android:layout_height="56dp"
-            android:background="#33FFFFFF"
+            android:background="@drawable/circle_gray"
             android:src="@android:drawable/ic_menu_rotate"
             android:padding="12dp"/>
 
