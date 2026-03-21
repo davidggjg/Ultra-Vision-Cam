@@ -12,7 +12,6 @@
 
     <application
         android:label="Ultra Vision"
-        android:icon="@mipmap/ic_launcher"
         android:theme="@style/Theme.AppCompat.Light.NoActionBar">
         <activity
             android:name=".MainActivity"
