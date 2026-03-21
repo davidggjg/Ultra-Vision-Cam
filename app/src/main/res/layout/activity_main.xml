@@ -16,6 +16,14 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>
 
+    <!-- אנימציית צילום -->
+    <View
+        android:id="@+id/flashOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#FFFFFF"
+        android:visibility="gone"/>
+
     <!-- כלים עליונים -->
     <LinearLayout
         android:layout_width="match_parent"
@@ -34,10 +42,7 @@
             android:src="@android:drawable/ic_menu_camera"
             android:padding="10dp"/>
 
-        <Space
-            android:layout_width="0dp"
-            android:layout_height="1dp"
-            android:layout_weight="1"/>
+        <Space android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1"/>
 
         <ImageButton
             android:id="@+id/btnSettings"
@@ -48,6 +53,24 @@
             android:padding="10dp"/>
 
     </LinearLayout>
+
+    <!-- טיימר הקלטה -->
+    <TextView
+        android:id="@+id/recordingTimer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="00:00:00"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:background="#CC000000"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="6dp"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="80dp"/>
 
     <!-- כפתורי זום -->
     <LinearLayout
@@ -63,51 +86,26 @@
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginBottom="8dp">
 
-        <TextView
-            android:id="@+id/zoomPt6"
-            android:layout_width="44dp"
-            android:layout_height="36dp"
-            android:text=".6"
-            android:textColor="#AAAAAA"
-            android:textSize="13sp"
+        <TextView android:id="@+id/zoomPt6"
+            android:layout_width="44dp" android:layout_height="36dp"
+            android:text=".6" android:textColor="#AAAAAA" android:textSize="13sp"
             android:gravity="center"/>
-
-        <TextView
-            android:id="@+id/zoom1x"
-            android:layout_width="44dp"
-            android:layout_height="36dp"
-            android:text="1×"
-            android:textColor="#FFFFFF"
-            android:textSize="13sp"
-            android:textStyle="bold"
-            android:gravity="center"
+        <TextView android:id="@+id/zoom1x"
+            android:layout_width="44dp" android:layout_height="36dp"
+            android:text="1×" android:textColor="#FFFFFF" android:textSize="13sp"
+            android:textStyle="bold" android:gravity="center"
             android:background="#44FFFFFF"/>
-
-        <TextView
-            android:id="@+id/zoom2x"
-            android:layout_width="44dp"
-            android:layout_height="36dp"
-            android:text="2"
-            android:textColor="#AAAAAA"
-            android:textSize="13sp"
+        <TextView android:id="@+id/zoom2x"
+            android:layout_width="44dp" android:layout_height="36dp"
+            android:text="2" android:textColor="#AAAAAA" android:textSize="13sp"
             android:gravity="center"/>
-
-        <TextView
-            android:id="@+id/zoom3x"
-            android:layout_width="44dp"
-            android:layout_height="36dp"
-            android:text="3"
-            android:textColor="#AAAAAA"
-            android:textSize="13sp"
+        <TextView android:id="@+id/zoom3x"
+            android:layout_width="44dp" android:layout_height="36dp"
+            android:text="3" android:textColor="#AAAAAA" android:textSize="13sp"
             android:gravity="center"/>
-
-        <TextView
-            android:id="@+id/zoom10x"
-            android:layout_width="44dp"
-            android:layout_height="36dp"
-            android:text="10"
-            android:textColor="#AAAAAA"
-            android:textSize="13sp"
+        <TextView android:id="@+id/zoom10x"
+            android:layout_width="44dp" android:layout_height="36dp"
+            android:text="10" android:textColor="#AAAAAA" android:textSize="13sp"
             android:gravity="center"/>
 
     </LinearLayout>
@@ -121,46 +119,26 @@
         android:gravity="center"
         app:layout_constraintBottom_toTopOf="@id/bottomBar">
 
-        <TextView
-            android:id="@+id/modeFocus"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="דיוק"
-            android:textColor="#AAAAAA"
-            android:textSize="13sp"
+        <TextView android:id="@+id/modeFocus"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="דיוק" android:textColor="#AAAAAA" android:textSize="13sp"
             android:paddingHorizontal="16dp"/>
-
-        <TextView
-            android:id="@+id/modePhoto"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="תמונה"
-            android:textColor="#FFFFFF"
-            android:textSize="14sp"
-            android:textStyle="bold"
+        <TextView android:id="@+id/modePhoto"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="תמונה" android:textColor="#FFFFFF" android:textSize="14sp"
+            android:textStyle="bold" android:paddingHorizontal="16dp"/>
+        <TextView android:id="@+id/modeVideo"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="וידאו" android:textColor="#AAAAAA" android:textSize="13sp"
             android:paddingHorizontal="16dp"/>
-
-        <TextView
-            android:id="@+id/modeVideo"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="וידאו"
-            android:textColor="#AAAAAA"
-            android:textSize="13sp"
-            android:paddingHorizontal="16dp"/>
-
-        <TextView
-            android:id="@+id/modeMore"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="עוד"
-            android:textColor="#AAAAAA"
-            android:textSize="13sp"
+        <TextView android:id="@+id/modeMore"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="עוד" android:textColor="#AAAAAA" android:textSize="13sp"
             android:paddingHorizontal="16dp"/>
 
     </LinearLayout>
 
-    <!-- בר תחתון -->
+    <!-- בר תחתון - מצב תמונה -->
     <LinearLayout
         android:id="@+id/bottomBar"
         android:layout_width="match_parent"
@@ -171,19 +149,19 @@
         android:background="#DD000000"
         app:layout_constraintBottom_toBottomOf="parent">
 
+        <!-- תמונה אחרונה -->
         <ImageButton
             android:id="@+id/btnGallery"
             android:layout_width="56dp"
             android:layout_height="56dp"
             android:background="@drawable/circle_gray"
             android:src="@android:drawable/ic_menu_gallery"
-            android:padding="12dp"/>
+            android:padding="12dp"
+            android:scaleType="centerCrop"/>
 
-        <Space
-            android:layout_width="0dp"
-            android:layout_height="1dp"
-            android:layout_weight="1"/>
+        <Space android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1"/>
 
+        <!-- כפתור צילום עיגול -->
         <FrameLayout
             android:layout_width="84dp"
             android:layout_height="84dp"
@@ -205,13 +183,78 @@
 
         </FrameLayout>
 
-        <Space
-            android:layout_width="0dp"
-            android:layout_height="1dp"
-            android:layout_weight="1"/>
+        <Space android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1"/>
 
         <ImageButton
             android:id="@+id/btnFlip"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:background="@drawable/circle_gray"
+            android:src="@android:drawable/ic_menu_rotate"
+            android:padding="12dp"/>
+
+    </LinearLayout>
+
+    <!-- בר וידאו - מוסתר בהתחלה -->
+    <LinearLayout
+        android:id="@+id/videoBar"
+        android:layout_width="match_parent"
+        android:layout_height="120dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="32dp"
+        android:background="#DD000000"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <!-- כפתור הקלטה -->
+        <FrameLayout
+            android:layout_width="84dp"
+            android:layout_height="84dp"
+            android:gravity="center">
+
+            <View
+                android:layout_width="84dp"
+                android:layout_height="84dp"
+                android:background="@drawable/circle_outline"
+                android:layout_gravity="center"/>
+
+            <ImageButton
+                android:id="@+id/btnRecord"
+                android:layout_width="70dp"
+                android:layout_height="70dp"
+                android:background="@drawable/circle_white"
+                android:src="@null"
+                android:layout_gravity="center"/>
+
+        </FrameLayout>
+
+        <Space android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1"/>
+
+        <!-- פאוז -->
+        <ImageButton
+            android:id="@+id/btnPause"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:background="@drawable/circle_gray"
+            android:src="@android:drawable/ic_media_pause"
+            android:padding="12dp"/>
+
+        <Space android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1"/>
+
+        <!-- עצור -->
+        <ImageButton
+            android:id="@+id/btnStop"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:background="@drawable/circle_gray"
+            android:src="@android:drawable/ic_media_next"
+            android:padding="12dp"/>
+
+        <Space android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1"/>
+
+        <ImageButton
+            android:id="@+id/btnFlipVideo"
             android:layout_width="56dp"
             android:layout_height="56dp"
             android:background="@drawable/circle_gray"
