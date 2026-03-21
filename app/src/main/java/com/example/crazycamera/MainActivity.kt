@@ -1,3 +1,4 @@
+import androidx.camera.core.Camera
 package com.example.crazycamera
 
 import android.Manifest
