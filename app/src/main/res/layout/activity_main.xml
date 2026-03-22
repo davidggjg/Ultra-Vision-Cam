@@ -16,7 +16,6 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>
 
-    <!-- אנימציית צילום -->
     <View
         android:id="@+id/flashOverlay"
         android:layout_width="match_parent"
@@ -24,13 +23,15 @@
         android:background="#FFFFFF"
         android:visibility="gone"/>
 
-    <!-- הגדרות מהירות למעלה - כמו סמסונג -->
+    <!-- הגדרות מהירות עליונות - כמו סמסונג -->
     <HorizontalScrollView
+        android:id="@+id/quickControls"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:scrollbars="none"
         android:paddingHorizontal="12dp"
         android:paddingTop="16dp"
+        android:visibility="visible"
         app:layout_constraintTop_toTopOf="parent">
 
         <LinearLayout
@@ -39,7 +40,6 @@
             android:orientation="horizontal"
             android:gravity="center_vertical">
 
-            <!-- פלאש -->
             <ImageButton
                 android:id="@+id/btnFlash"
                 android:layout_width="40dp"
@@ -49,7 +49,6 @@
                 android:padding="8dp"
                 android:layout_marginEnd="8dp"/>
 
-            <!-- טיימר -->
             <ImageButton
                 android:id="@+id/btnTimer"
                 android:layout_width="40dp"
@@ -59,7 +58,6 @@
                 android:padding="8dp"
                 android:layout_marginEnd="8dp"/>
 
-            <!-- יחס תמונה -->
             <TextView
                 android:id="@+id/btnRatio"
                 android:layout_width="wrap_content"
@@ -72,7 +70,6 @@
                 android:paddingHorizontal="10dp"
                 android:layout_marginEnd="8dp"/>
 
-            <!-- רזולוציה -->
             <TextView
                 android:id="@+id/btnResolution"
                 android:layout_width="wrap_content"
@@ -85,7 +82,67 @@
                 android:paddingHorizontal="10dp"
                 android:layout_marginEnd="8dp"/>
 
-            <!-- הגדרות -->
+            <!-- פילטרי AR - כמו סנאפצ'אט -->
+            <TextView
+                android:id="@+id/btnFilterNone"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:text="😐"
+                android:textSize="20sp"
+                android:gravity="center"
+                android:background="@drawable/circle_gray"
+                android:layout_marginEnd="6dp"/>
+
+            <TextView
+                android:id="@+id/btnFilterDog"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:text="🐶"
+                android:textSize="20sp"
+                android:gravity="center"
+                android:background="@drawable/circle_gray"
+                android:layout_marginEnd="6dp"/>
+
+            <TextView
+                android:id="@+id/btnFilterGlasses"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:text="🕶️"
+                android:textSize="20sp"
+                android:gravity="center"
+                android:background="@drawable/circle_gray"
+                android:layout_marginEnd="6dp"/>
+
+            <TextView
+                android:id="@+id/btnFilterCrown"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:text="👑"
+                android:textSize="20sp"
+                android:gravity="center"
+                android:background="@drawable/circle_gray"
+                android:layout_marginEnd="6dp"/>
+
+            <TextView
+                android:id="@+id/btnFilterBunny"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:text="🐰"
+                android:textSize="20sp"
+                android:gravity="center"
+                android:background="@drawable/circle_gray"
+                android:layout_marginEnd="6dp"/>
+
+            <TextView
+                android:id="@+id/btnFilterHeart"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:text="😍"
+                android:textSize="20sp"
+                android:gravity="center"
+                android:background="@drawable/circle_gray"
+                android:layout_marginEnd="8dp"/>
+
             <ImageButton
                 android:id="@+id/btnSettings"
                 android:layout_width="40dp"
