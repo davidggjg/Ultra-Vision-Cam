@@ -1,370 +1,353 @@
-<?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="#000000">
+    private fun showRatioMenu() {
+        val options = arrayOf("3:4", "9:16", "1:1", "מלא")
+        android.app.AlertDialog.Builder(this)
+            .setTitle("יחס תמונה")
+            .setItems(options) { _, which -> btnRatio.text = options[which] }.show()
+    }
 
-    <androidx.camera.view.PreviewView
-        android:id="@+id/previewView"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
+    private fun showResolutionMenu() {
+        val options = arrayOf("12M", "50M", "200M")
+        android.app.AlertDialog.Builder(this)
+            .setTitle("רזולוציה")
+            .setItems(options) { _, which -> btnResolution.text = options[which] }.show()
+    }
 
-    <com.example.crazycamera.FaceOverlayView
-        android:id="@+id/overlayView"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
+    private fun showSettings() {
+        val items = arrayOf(
+            "📸 מדריך קומפוזיציה",
+            "📍 תגיות מיקום",
+            "🔊 צלילי צילום",
+            "💧 סימן מים",
+            "🤳 שמור סלפי כמו תצוגה מקדימה",
+            "🎬 FPS אוטומטי",
+            "📊 מייצב וידאו",
+            "🌟 HDR"
+        )
+        android.app.AlertDialog.Builder(this)
+            .setTitle("⚙️ הגדרות")
+            .setItems(items) { _, which ->
+                Toast.makeText(this, items[which], Toast.LENGTH_SHORT).show()
+            }.show()
+    }
 
-    <View
-        android:id="@+id/flashOverlay"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="#FFFFFF"
-        android:visibility="gone"/>
+    private fun showMoreModes() {
+        val dialog = BottomSheetDialog(this)
+        val gridLayout = android.widget.GridLayout(this).apply {
+            columnCount = 4
+            setPadding(24, 32, 24, 48)
+            setBackgroundColor(Color.parseColor("#EE1A1A1A"))
+        }
 
-    <!-- הגדרות מהירות עליונות - כמו סמסונג -->
-    <HorizontalScrollView
-        android:id="@+id/quickControls"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:scrollbars="none"
-        android:paddingHorizontal="12dp"
-        android:paddingTop="16dp"
-        android:visibility="visible"
-        app:layout_constraintTop_toTopOf="parent">
+        val modes = listOf(
+            "לילה" to "🌙",
+            "וידאו\nמקצועי" to "🎬",
+            "מקצועי" to "📷",
+            "הילוך\nאיטי" to "🐢",
+            "היפר\nטיים-לאפס" to "⏩",
+            "פנורמה" to "🌅",
+            "מזון" to "🍔",
+            "טייק\nבודד" to "🎯",
+            "דיוקן\nוידאו" to "🎥",
+            "הקלטה\nכפולה" to "📹"
+        )
+        val videoModes = setOf("הילוך\nאיטי", "היפר\nטיים-לאפס",
+            "וידאו\nמקצועי", "דיוקן\nוידאו", "הקלטה\nכפולה")
 
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
+        for ((name, emoji) in modes) {
+            val btn = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = android.view.Gravity.CENTER
+                setPadding(8, 20, 8, 20)
+                setOnClickListener {
+                    if (name in videoModes) switchMode("וידאו")
+                    Toast.makeText(this@MainActivity,
+                        name.replace("\n", " "), Toast.LENGTH_SHORT).show()
+                    dialog.dismiss()
+                }
+            }
+            btn.addView(TextView(this).apply {
+                text = emoji; textSize = 30f
+                gravity = android.view.Gravity.CENTER
+            })
+            btn.addView(TextView(this).apply {
+                text = name; textSize = 10f
+                setTextColor(Color.WHITE)
+                gravity = android.view.Gravity.CENTER
+            })
+            val params = android.widget.GridLayout.LayoutParams().apply {
+                columnSpec = android.widget.GridLayout.spec(
+                    android.widget.GridLayout.UNDEFINED, 1f)
+                width = 0
+            }
+            gridLayout.addView(btn, params)
+        }
 
-            <ImageButton
-                android:id="@+id/btnFlash"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:background="@drawable/circle_gray"
-                android:src="@android:drawable/ic_menu_camera"
-                android:padding="8dp"
-                android:layout_marginEnd="8dp"/>
+        dialog.setContentView(gridLayout)
+        dialog.show()
+    }
 
-            <ImageButton
-                android:id="@+id/btnTimer"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:background="@drawable/circle_gray"
-                android:src="@android:drawable/ic_menu_recent_history"
-                android:padding="8dp"
-                android:layout_marginEnd="8dp"/>
+    private fun switchMode(mode: String) {
+        currentMode = mode
+        listOf(modeFocus, modePhoto, modeVideo, modeMore).forEach {
+            it.setTextColor(Color.parseColor("#AAAAAA"))
+            it.textSize = 13f
+        }
+        when (mode) {
+            "דיוק" -> {
+                modeFocus.setTextColor(Color.WHITE); modeFocus.textSize = 14f
+                bottomBar.visibility = View.VISIBLE
+                videoBar.visibility = View.GONE
+            }
+            "תמונה" -> {
+                modePhoto.setTextColor(Color.WHITE); modePhoto.textSize = 14f
+                bottomBar.visibility = View.VISIBLE
+                videoBar.visibility = View.GONE
+            }
+            "וידאו" -> {
+                modeVideo.setTextColor(Color.WHITE); modeVideo.textSize = 14f
+                bottomBar.visibility = View.GONE
+                videoBar.visibility = View.VISIBLE
+                btnRecord.setBackgroundResource(R.drawable.circle_white)
+            }
+            else -> {
+                modeMore.setTextColor(Color.WHITE); modeMore.textSize = 14f
+                bottomBar.visibility = View.VISIBLE
+                videoBar.visibility = View.GONE
+            }
+        }
+    }
 
-            <TextView
-                android:id="@+id/btnRatio"
-                android:layout_width="wrap_content"
-                android:layout_height="40dp"
-                android:text="3:4"
-                android:textColor="#FFFFFF"
-                android:textSize="12sp"
-                android:gravity="center"
-                android:background="@drawable/circle_gray"
-                android:paddingHorizontal="10dp"
-                android:layout_marginEnd="8dp"/>
+    private fun startCamera() {
+        ProcessCameraProvider.getInstance(this).also { future ->
+            future.addListener({
+                cameraProvider = future.get()
+                bindCamera()
+            }, ContextCompat.getMainExecutor(this))
+        }
+    }
 
-            <TextView
-                android:id="@+id/btnResolution"
-                android:layout_width="wrap_content"
-                android:layout_height="40dp"
-                android:text="12M"
-                android:textColor="#FFFFFF"
-                android:textSize="12sp"
-                android:gravity="center"
-                android:background="@drawable/circle_gray"
-                android:paddingHorizontal="10dp"
-                android:layout_marginEnd="8dp"/>
+    private fun bindCamera() {
+        val cp = cameraProvider ?: return
+        val preview = Preview.Builder().build().also {
+            it.setSurfaceProvider(previewView.surfaceProvider)
+        }
+        imageCapture = ImageCapture.Builder()
+            .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+            .setJpegQuality(95)
+            .build()
+        val recorder = Recorder.Builder()
+            .setQualitySelector(QualitySelector.from(Quality.HIGHEST))
+            .build()
+        videoCapture = VideoCapture.withOutput(recorder)
+        imageAnalysis = ImageAnalysis.Builder()
+            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+            .build()
+        imageAnalysis!!.setAnalyzer(cameraExecutor) { proxy ->
+            val img = proxy.image
+            if (img != null) {
+                faceDetector.process(InputImage.fromMediaImage(img,
+                    proxy.imageInfo.rotationDegrees))
+                    .addOnSuccessListener { faces ->
+                        overlayView.setFaces(faces, proxy.width, proxy.height,
+                            lensFacing == CameraSelector.LENS_FACING_FRONT)
+                    }
+                    .addOnCompleteListener { proxy.close() }
+            } else proxy.close()
+        }
+        try {
+            cp.unbindAll()
+            camera = cp.bindToLifecycle(this,
+                CameraSelector.Builder().requireLensFacing(lensFacing).build(),
+                preview, imageCapture, videoCapture, imageAnalysis)
 
-            <!-- פילטרי AR - כמו סנאפצ'אט -->
-            <TextView
-                android:id="@+id/btnFilterNone"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:text="😐"
-                android:textSize="20sp"
-                android:gravity="center"
-                android:background="@drawable/circle_gray"
-                android:layout_marginEnd="6dp"/>
+            camera?.cameraInfo?.zoomState?.observe(this) { state ->
+                zoomRuler.setLinearZoom(state.linearZoom, state.zoomRatio)
+            }
 
-            <TextView
-                android:id="@+id/btnFilterDog"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:text="🐶"
-                android:textSize="20sp"
-                android:gravity="center"
-                android:background="@drawable/circle_gray"
-                android:layout_marginEnd="6dp"/>
+            if (flashEnabled) camera?.cameraControl?.enableTorch(true)
+        } catch (e: Exception) {
+            Toast.makeText(this, "שגיאה: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
 
-            <TextView
-                android:id="@+id/btnFilterGlasses"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:text="🕶️"
-                android:textSize="20sp"
-                android:gravity="center"
-                android:background="@drawable/circle_gray"
-                android:layout_marginEnd="6dp"/>
+    private fun startPhotoTimer() {
+        var countdown = timerDelay
+        val r = object : Runnable {
+            override fun run() {
+                if (countdown > 0) {
+                    Toast.makeText(this@MainActivity, "$countdown...",
+                        Toast.LENGTH_SHORT).show()
+                    countdown--
+                    handler.postDelayed(this, 1000)
+                } else takePhoto()
+            }
+        }
+        handler.post(r)
+    }
 
-            <TextView
-                android:id="@+id/btnFilterCrown"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:text="👑"
-                android:textSize="20sp"
-                android:gravity="center"
-                android:background="@drawable/circle_gray"
-                android:layout_marginEnd="6dp"/>
+    private fun takePhoto() {
+        val ic = imageCapture ?: return
+        flashOverlay.visibility = View.VISIBLE
+        handler.postDelayed({ flashOverlay.visibility = View.GONE }, 150)
+        val name = "UltraVision_${System.currentTimeMillis()}"
+        val cv = ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, name)
+            put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
+            put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/UltraVision")
+        }
+        ic.takePicture(
+            ImageCapture.OutputFileOptions.Builder(contentResolver,
+                MediaStore.Images.Media.EXTERNAL_CONTENT_URI, cv).build(),
+            ContextCompat.getMainExecutor(this),
+            object : ImageCapture.OnImageSavedCallback {
+                override fun onImageSaved(o: ImageCapture.OutputFileResults) {
+                    Toast.makeText(baseContext, "📸 נשמר!", Toast.LENGTH_SHORT).show()
+                    updateGalleryThumbnail()
+                }
+                override fun onError(e: ImageCaptureException) {
+                    Toast.makeText(baseContext, "שגיאה בצילום", Toast.LENGTH_SHORT).show()
+                }
+            })
+    }
 
-            <TextView
-                android:id="@+id/btnFilterBunny"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:text="🐰"
-                android:textSize="20sp"
-                android:gravity="center"
-                android:background="@drawable/circle_gray"
-                android:layout_marginEnd="6dp"/>
+    private fun updateGalleryThumbnail() {
+        contentResolver.query(
+            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+            arrayOf(MediaStore.Images.Media._ID), null, null,
+            "${MediaStore.Images.Media.DATE_ADDED} DESC"
+        )?.use {
+            if (it.moveToFirst()) {
+                val uri = android.net.Uri.withAppendedPath(
+                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                    it.getLong(0).toString())
+                runOnUiThread { btnGallery.setImageURI(uri) }
+            }
+        }
+    }
 
-            <TextView
-                android:id="@+id/btnFilterHeart"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:text="😍"
-                android:textSize="20sp"
-                android:gravity="center"
-                android:background="@drawable/circle_gray"
-                android:layout_marginEnd="8dp"/>
+    private fun startRecording() {
+        if (isRecording) return
+        val name = "UltraVision_${System.currentTimeMillis()}"
+        val cv = ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, name)
+            put(MediaStore.MediaColumns.MIME_TYPE, "video/mp4")
+            put(MediaStore.Video.Media.RELATIVE_PATH, "Movies/UltraVision")
+        }
+        try {
+            recording = videoCapture?.output?.prepareRecording(this,
+                MediaStoreOutputOptions.Builder(contentResolver,
+                    MediaStore.Video.Media.EXTERNAL_CONTENT_URI)
+                    .setContentValues(cv).build())
+                ?.apply {
+                    if (ContextCompat.checkSelfPermission(this@MainActivity,
+                            Manifest.permission.RECORD_AUDIO) ==
+                        PackageManager.PERMISSION_GRANTED)
+                        withAudioEnabled()
+                }?.start(ContextCompat.getMainExecutor(this)) { event ->
+                    // טיפול באירועי הקלטה
+                }
+            isRecording = true
+            btnRecord.setBackgroundColor(Color.RED)
+            timerSeconds = 0
+            recordingTimer.visibility = View.VISIBLE
+            startTimer()
+        } catch (e: Exception) {
+            Toast.makeText(this, "שגיאה בהקלטה: ${e.message}",
+                Toast.LENGTH_SHORT).show()
+        }
+    }
 
-            <ImageButton
-                android:id="@+id/btnSettings"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:background="@drawable/circle_gray"
-                android:src="@android:drawable/ic_menu_preferences"
-                android:padding="8dp"/>
+    private fun pauseRecording() {
+        if (!isRecording) return
+        try {
+            if (!isPaused) {
+                recording?.pause(); isPaused = true
+                timerRunnable?.let { handler.removeCallbacks(it) }
+                btnPause.setImageResource(android.R.drawable.ic_media_play)
+            } else {
+                recording?.resume(); isPaused = false
+                startTimer()
+                btnPause.setImageResource(android.R.drawable.ic_media_pause)
+            }
+        } catch (e: Exception) {
+            Toast.makeText(this, "שגיאה", Toast.LENGTH_SHORT).show()
+        }
+    }
 
-        </LinearLayout>
-    </HorizontalScrollView>
+    private fun stopRecording() {
+        if (!isRecording) return
+        try {
+            recording?.stop()
+            recording = null
+        } catch (e: Exception) {}
+        isRecording = false
+        isPaused = false
+        timerRunnable?.let { handler.removeCallbacks(it) }
+        recordingTimer.visibility = View.GONE
+        btnRecord.setBackgroundResource(R.drawable.circle_white)
+        btnPause.setImageResource(android.R.drawable.ic_media_pause)
+        Toast.makeText(this, "⏹ נשמר!", Toast.LENGTH_SHORT).show()
+    }
 
-    <!-- טיימר הקלטה -->
-    <TextView
-        android:id="@+id/recordingTimer"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="00:00:00"
-        android:textColor="#FFFFFF"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:background="#CCFF4444"
-        android:paddingHorizontal="16dp"
-        android:paddingVertical="6dp"
-        android:visibility="gone"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="80dp"/>
+    private fun startTimer() {
+        timerRunnable = object : Runnable {
+            override fun run() {
+                timerSeconds++
+                val h = timerSeconds / 3600
+                val m = (timerSeconds % 3600) / 60
+                val s = timerSeconds % 60
+                recordingTimer.text = String.format("%02d:%02d:%02d", h, m, s)
+                handler.postDelayed(this, 1000)
+            }
+        }
+        handler.postDelayed(timerRunnable!!, 1000)
+    }
 
-    <!-- סרגל זום - מוסתר, מופיע רק בזמן pinch -->
-    <com.example.crazycamera.ZoomRulerView
-        android:id="@+id/zoomRuler"
-        android:layout_width="match_parent"
-        android:layout_height="72dp"
-        android:visibility="gone"
-        app:layout_constraintBottom_toTopOf="@id/zoomButtons"
-        android:layout_marginBottom="4dp"/>
+    private fun flipCamera() {
+        lensFacing = if (lensFacing == CameraSelector.LENS_FACING_BACK)
+            CameraSelector.LENS_FACING_FRONT else CameraSelector.LENS_FACING_BACK
+        bindCamera()
+    }
 
-    <!-- כפתורי זום קבועים -->
-    <LinearLayout
-        android:id="@+id/zoomButtons"
-        android:layout_width="wrap_content"
-        android:layout_height="44dp"
-        android:orientation="horizontal"
-        android:background="#99000000"
-        android:paddingHorizontal="4dp"
-        android:gravity="center_vertical"
-        app:layout_constraintBottom_toTopOf="@id/modesBar"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginBottom="8dp">
+    private fun toggleFlash() {
+        flashEnabled = !flashEnabled
+        camera?.cameraControl?.enableTorch(flashEnabled)
+            ?.addListener({
+                runOnUiThread {
+                    btnFlash.setImageResource(
+                        if (flashEnabled) android.R.drawable.ic_menu_view
+                        else android.R.drawable.ic_menu_camera)
+                }
+            }, ContextCompat.getMainExecutor(this))
+    }
 
-        <TextView android:id="@+id/zoomPt6"
-            android:layout_width="48dp" android:layout_height="36dp"
-            android:text=".6" android:textColor="#AAAAAA" android:textSize="13sp"
-            android:gravity="center"/>
-        <TextView android:id="@+id/zoom1x"
-            android:layout_width="48dp" android:layout_height="36dp"
-            android:text="1×" android:textColor="#FFFFFF" android:textSize="13sp"
-            android:textStyle="bold" android:gravity="center"
-            android:background="#44FFFFFF"/>
-        <TextView android:id="@+id/zoom2x"
-            android:layout_width="48dp" android:layout_height="36dp"
-            android:text="2" android:textColor="#AAAAAA" android:textSize="13sp"
-            android:gravity="center"/>
-        <TextView android:id="@+id/zoom3x"
-            android:layout_width="48dp" android:layout_height="36dp"
-            android:text="3" android:textColor="#AAAAAA" android:textSize="13sp"
-            android:gravity="center"/>
-        <TextView android:id="@+id/zoom10x"
-            android:layout_width="48dp" android:layout_height="36dp"
-            android:text="10" android:textColor="#AAAAAA" android:textSize="13sp"
-            android:gravity="center"/>
+    private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
+        ContextCompat.checkSelfPermission(baseContext, it) ==
+            PackageManager.PERMISSION_GRANTED
+    }
 
-    </LinearLayout>
+    override fun onRequestPermissionsResult(code: Int, perms: Array<String>,
+        results: IntArray) {
+        super.onRequestPermissionsResult(code, perms, results)
+        if (code == 10 && allPermissionsGranted()) startCamera()
+        else Toast.makeText(this, "נדרשות הרשאות", Toast.LENGTH_LONG).show()
+    }
 
-    <!-- בר מצבים -->
-    <LinearLayout
-        android:id="@+id/modesBar"
-        android:layout_width="match_parent"
-        android:layout_height="36dp"
-        android:orientation="horizontal"
-        android:gravity="center"
-        app:layout_constraintBottom_toTopOf="@id/bottomBar">
+    override fun onDestroy() {
+        super.onDestroy()
+        if (isRecording) {
+            try { recording?.stop() } catch (e: Exception) {}
+        }
+        camera?.cameraControl?.enableTorch(false)
+        timerRunnable?.let { handler.removeCallbacks(it) }
+        hideRulerRunnable?.let { handler.removeCallbacks(it) }
+        cameraExecutor.shutdown()
+    }
 
-        <TextView android:id="@+id/modeFocus"
-            android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="דיוק" android:textColor="#AAAAAA" android:textSize="13sp"
-            android:paddingHorizontal="16dp"/>
-        <TextView android:id="@+id/modePhoto"
-            android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="תמונה" android:textColor="#FFFFFF" android:textSize="14sp"
-            android:textStyle="bold" android:paddingHorizontal="16dp"/>
-        <TextView android:id="@+id/modeVideo"
-            android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="וידאו" android:textColor="#AAAAAA" android:textSize="13sp"
-            android:paddingHorizontal="16dp"/>
-        <TextView android:id="@+id/modeMore"
-            android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="עוד" android:textColor="#AAAAAA" android:textSize="13sp"
-            android:paddingHorizontal="16dp"/>
-
-    </LinearLayout>
-
-    <!-- בר תחתון תמונה -->
-    <LinearLayout
-        android:id="@+id/bottomBar"
-        android:layout_width="match_parent"
-        android:layout_height="120dp"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingHorizontal="32dp"
-        android:background="#DD000000"
-        app:layout_constraintBottom_toBottomOf="parent">
-
-        <ImageButton
-            android:id="@+id/btnGallery"
-            android:layout_width="56dp"
-            android:layout_height="56dp"
-            android:background="@drawable/circle_gray"
-            android:src="@android:drawable/ic_menu_gallery"
-            android:padding="12dp"
-            android:scaleType="centerCrop"/>
-
-        <Space android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1"/>
-
-        <FrameLayout
-            android:layout_width="84dp"
-            android:layout_height="84dp"
-            android:gravity="center">
-
-            <View
-                android:layout_width="84dp"
-                android:layout_height="84dp"
-                android:background="@drawable/circle_outline"
-                android:layout_gravity="center"/>
-
-            <ImageButton
-                android:id="@+id/btnCapture"
-                android:layout_width="70dp"
-                android:layout_height="70dp"
-                android:background="@drawable/circle_white"
-                android:src="@null"
-                android:layout_gravity="center"/>
-
-        </FrameLayout>
-
-        <Space android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1"/>
-
-        <ImageButton
-            android:id="@+id/btnFlip"
-            android:layout_width="56dp"
-            android:layout_height="56dp"
-            android:background="@drawable/circle_gray"
-            android:src="@android:drawable/ic_menu_rotate"
-            android:padding="12dp"/>
-
-    </LinearLayout>
-
-    <!-- בר וידאו -->
-    <LinearLayout
-        android:id="@+id/videoBar"
-        android:layout_width="match_parent"
-        android:layout_height="120dp"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingHorizontal="24dp"
-        android:background="#DD000000"
-        android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent">
-
-        <FrameLayout
-            android:layout_width="84dp"
-            android:layout_height="84dp"
-            android:gravity="center">
-
-            <View
-                android:layout_width="84dp"
-                android:layout_height="84dp"
-                android:background="@drawable/circle_outline"
-                android:layout_gravity="center"/>
-
-            <ImageButton
-                android:id="@+id/btnRecord"
-                android:layout_width="70dp"
-                android:layout_height="70dp"
-                android:background="@drawable/circle_white"
-                android:src="@null"
-                android:layout_gravity="center"/>
-
-        </FrameLayout>
-
-        <Space android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1"/>
-
-        <ImageButton
-            android:id="@+id/btnPause"
-            android:layout_width="56dp"
-            android:layout_height="56dp"
-            android:background="@drawable/circle_gray"
-            android:src="@android:drawable/ic_media_pause"
-            android:padding="12dp"/>
-
-        <Space android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1"/>
-
-        <ImageButton
-            android:id="@+id/btnStop"
-            android:layout_width="56dp"
-            android:layout_height="56dp"
-            android:background="@drawable/circle_gray"
-            android:src="@android:drawable/ic_media_next"
-            android:padding="12dp"/>
-
-        <Space android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1"/>
-
-        <ImageButton
-            android:id="@+id/btnFlipVideo"
-            android:layout_width="56dp"
-            android:layout_height="56dp"
-            android:background="@drawable/circle_gray"
-            android:src="@android:drawable/ic_menu_rotate"
-            android:padding="12dp"/>
-
-    </LinearLayout>
-
-</androidx.constraintlayout.widget.ConstraintLayout>
+    companion object {
+        private val REQUIRED_PERMISSIONS = arrayOf(
+            Manifest.permission.CAMERA,
+            Manifest.permission.RECORD_AUDIO
+        )
+    }
+}
