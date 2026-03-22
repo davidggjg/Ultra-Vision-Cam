@@ -29,14 +29,11 @@ class ZoomRulerView @JvmOverloads constructor(
         typeface = Typeface.DEFAULT_BOLD
     }
 
-    // linearZoom: 0.0 עד 1.0
     private var linearZoom = 0.1f
     private var displayRatio = 1f
     private var lastX = 0f
-
-    // קבועים לפסים
-    private val tickSpacing = 18f
     private val numTicks = 200
+    private val tickSpacing = 18f
 
     fun setLinearZoom(linear: Float, ratio: Float) {
         linearZoom = linear.coerceIn(0f, 1f)
@@ -61,19 +58,14 @@ class ZoomRulerView @JvmOverloads constructor(
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         if (width == 0) return
-
         val cx = width / 2f
         val cy = height / 2f
-
-        // המיקום הנוכחי בפסים
         val currentPos = linearZoom * (numTicks * tickSpacing)
 
-        // צייר פסים
         for (i in 0..numTicks) {
             val tickPos = i * tickSpacing
             val screenX = cx + (tickPos - currentPos)
             if (screenX < 0 || screenX > width) continue
-
             val isMajor = (i % 10 == 0)
             val tickH = if (isMajor) cy * 0.6f else cy * 0.3f
             paintWhite.color = if (isMajor) Color.WHITE else Color.parseColor("#66FFFFFF")
@@ -81,14 +73,11 @@ class ZoomRulerView @JvmOverloads constructor(
             canvas.drawLine(screenX, cy - tickH, screenX, cy + tickH, paintWhite)
         }
 
-        // אינדיקטור מרכזי צהוב
         paintYellow.strokeWidth = 3f
-        canvas.drawLine(cx, cy * 0.3f, cx, cy * 1.7f, paintYellow)
+        canvas.drawLine(cx, cy * 0.2f, cx, cy * 1.8f, paintYellow)
 
-        // הצג זום נוכחי
-        val label = if (displayRatio < 1f) String.format("%.1fx", displayRatio)
-            else if (displayRatio < 10f) String.format("%.1fx", displayRatio)
+        val label = if (displayRatio < 10f) String.format("%.1fx", displayRatio)
             else String.format("%.0fx", displayRatio)
-        canvas.drawText(label, cx, cy * 0.25f, paintYellow)
+        canvas.drawText(label, cx, cy * 0.15f, paintYellow)
     }
 }
