@@ -85,7 +85,6 @@ class MainActivity : AppCompatActivity() {
     private var flashEnabled = false
     private var currentMode = "תמונה"
     private var timerDelay = 0
-    private var zoomRulerVisible = false
 
     private val handler = Handler(Looper.getMainLooper())
     private var timerSeconds = 0
@@ -140,13 +139,37 @@ class MainActivity : AppCompatActivity() {
                 .build()
         )
 
-        // סרגל זום
+        // פילטרי AR
+        findViewById<TextView>(R.id.btnFilterNone).setOnClickListener {
+            overlayView.currentFilter = FaceOverlayView.Filter.NONE
+            highlightFilter(it as TextView)
+        }
+        findViewById<TextView>(R.id.btnFilterDog).setOnClickListener {
+            overlayView.currentFilter = FaceOverlayView.Filter.DOG
+            highlightFilter(it as TextView)
+        }
+        findViewById<TextView>(R.id.btnFilterGlasses).setOnClickListener {
+            overlayView.currentFilter = FaceOverlayView.Filter.GLASSES
+            highlightFilter(it as TextView)
+        }
+        findViewById<TextView>(R.id.btnFilterCrown).setOnClickListener {
+            overlayView.currentFilter = FaceOverlayView.Filter.CROWN
+            highlightFilter(it as TextView)
+        }
+        findViewById<TextView>(R.id.btnFilterBunny).setOnClickListener {
+            overlayView.currentFilter = FaceOverlayView.Filter.BUNNY
+            highlightFilter(it as TextView)
+        }
+        findViewById<TextView>(R.id.btnFilterHeart).setOnClickListener {
+            overlayView.currentFilter = FaceOverlayView.Filter.HEART_EYES
+            highlightFilter(it as TextView)
+        }
+
         zoomRuler.onZoomChanged = { linear ->
             camera?.cameraControl?.setLinearZoom(linear)
             scheduleHideRuler()
         }
 
-        // Pinch to zoom - מציג סרגל
         scaleGestureDetector = ScaleGestureDetector(this,
             object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
                 override fun onScale(detector: ScaleGestureDetector): Boolean {
@@ -225,9 +248,18 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun highlightFilter(selected: TextView) {
+        val filterIds = listOf(R.id.btnFilterNone, R.id.btnFilterDog,
+            R.id.btnFilterGlasses, R.id.btnFilterCrown,
+            R.id.btnFilterBunny, R.id.btnFilterHeart)
+        filterIds.forEach {
+            findViewById<TextView>(it)?.setBackgroundResource(R.drawable.circle_gray)
+        }
+        selected.setBackgroundColor(Color.parseColor("#44FFFF00"))
+    }
+
     private fun showZoomRuler() {
         zoomRuler.visibility = View.VISIBLE
-        zoomRulerVisible = true
         scheduleHideRuler()
     }
 
@@ -235,7 +267,6 @@ class MainActivity : AppCompatActivity() {
         hideRulerRunnable?.let { handler.removeCallbacks(it) }
         hideRulerRunnable = Runnable {
             zoomRuler.visibility = View.GONE
-            zoomRulerVisible = false
         }
         handler.postDelayed(hideRulerRunnable!!, 3000)
     }
@@ -246,20 +277,21 @@ class MainActivity : AppCompatActivity() {
             it.setTextColor(Color.parseColor("#AAAAAA"))
             it.setBackgroundColor(Color.TRANSPARENT)
         }
-        val selected = listOf(zoomPt6, zoom1x, zoom2x, zoom3x, zoom10x)
-            .find { it.text == label }
-        selected?.setTextColor(Color.WHITE)
-        selected?.setBackgroundColor(Color.parseColor("#44FFFFFF"))
+        listOf(zoomPt6, zoom1x, zoom2x, zoom3x, zoom10x)
+            .find { it.text == label }?.apply {
+                setTextColor(Color.WHITE)
+                setBackgroundColor(Color.parseColor("#44FFFFFF"))
+            }
         showZoomRuler()
     }
 
     private fun showTimerMenu() {
-        val options = arrayOf("ללא טיימר ⏱️", "3 שניות", "10 שניות")
+        val options = arrayOf("⏱️ ללא טיימר", "⏱️ 3 שניות", "⏱️ 10 שניות")
         android.app.AlertDialog.Builder(this)
             .setTitle("טיימר")
             .setItems(options) { _, which ->
                 timerDelay = when (which) { 1 -> 3; 2 -> 10; else -> 0 }
-                btnTimer.alpha = if (timerDelay > 0) 1f else 0.5f
+                btnTimer.alpha = if (timerDelay > 0) 1f else 0.6f
                 Toast.makeText(this, options[which], Toast.LENGTH_SHORT).show()
             }.show()
     }
@@ -270,7 +302,6 @@ class MainActivity : AppCompatActivity() {
             .setTitle("יחס תמונה")
             .setItems(options) { _, which ->
                 btnRatio.text = options[which]
-                Toast.makeText(this, "יחס: ${options[which]}", Toast.LENGTH_SHORT).show()
             }.show()
     }
 
@@ -280,35 +311,33 @@ class MainActivity : AppCompatActivity() {
             .setTitle("רזולוציה")
             .setItems(options) { _, which ->
                 btnResolution.text = options[which]
-                Toast.makeText(this, "רזולוציה: ${options[which]}", Toast.LENGTH_SHORT).show()
             }.show()
     }
 
     private fun showSettings() {
-        val dialog = BottomSheetDialog(this)
-        val view = layoutInflater.inflate(android.R.layout.simple_list_item_1, null)
         val items = arrayOf(
             "📸 מדריך קומפוזיציה",
-            "🏃 תגיות מיקום",
+            "📍 תגיות מיקום",
             "🔊 צלילי צילום",
             "💧 סימן מים",
-            "↔️ שמור סלפי כמו תצוגה מקדימה",
+            "🤳 שמור סלפי כמו תצוגה מקדימה",
             "🎬 FPS אוטומטי לוידאו",
-            "📊 מייצב וידאו"
+            "📊 מייצב וידאו",
+            "🌟 HDR"
         )
         android.app.AlertDialog.Builder(this)
             .setTitle("⚙️ הגדרות מצלמה")
             .setItems(items) { _, which ->
                 Toast.makeText(this, items[which], Toast.LENGTH_SHORT).show()
             }.show()
-        dialog.dismiss()
     }
 
     private fun showMoreModes() {
         val dialog = BottomSheetDialog(this)
         val gridLayout = android.widget.GridLayout(this).apply {
             columnCount = 4
-            setPadding(24, 24, 24, 24)
+            setPadding(24, 32, 24, 32)
+            setBackgroundColor(Color.parseColor("#CC1A1A1A"))
         }
 
         val modes = listOf(
@@ -319,32 +348,47 @@ class MainActivity : AppCompatActivity() {
             "היפר\nטיים-לאפס" to "⏩",
             "פנורמה" to "🌅",
             "מזון" to "🍔",
-            "טייק\nבודד" to "🎯"
+            "טייק\nבודד" to "🎯",
+            "דיוקן\nוידאו" to "🎥",
+            "הקלטה\nכפולה" to "📹"
         )
-        val videoModes = setOf("הילוך\nאיטי", "היפר\nטיים-לאפס", "וידאו\nמקצועי")
+        val videoModes = setOf("הילוך\nאיטי", "היפר\nטיים-לאפס",
+            "וידאו\nמקצועי", "דיוקן\nוידאו", "הקלטה\nכפולה")
 
         for ((name, emoji) in modes) {
-            val btn = TextView(this).apply {
-                text = "$emoji\n$name"
-                textAlignment = View.TEXT_ALIGNMENT_CENTER
-                setTextColor(Color.WHITE)
-                textSize = 11f
-                setPadding(12, 16, 12, 16)
+            val btn = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = android.view.Gravity.CENTER
+                setPadding(8, 16, 8, 16)
                 setOnClickListener {
                     if (name in videoModes) switchMode("וידאו")
-                    Toast.makeText(this@MainActivity, name, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@MainActivity, name.replace("\n", " "),
+                        Toast.LENGTH_SHORT).show()
                     dialog.dismiss()
                 }
             }
+            val emojiView = TextView(this).apply {
+                text = emoji
+                textSize = 32f
+                gravity = android.view.Gravity.CENTER
+            }
+            val nameView = TextView(this).apply {
+                text = name
+                textSize = 10f
+                setTextColor(Color.WHITE)
+                gravity = android.view.Gravity.CENTER
+            }
+            btn.addView(emojiView)
+            btn.addView(nameView)
+
             val params = android.widget.GridLayout.LayoutParams().apply {
-                width = 0
                 columnSpec = android.widget.GridLayout.spec(
                     android.widget.GridLayout.UNDEFINED, 1f)
+                width = 0
             }
             gridLayout.addView(btn, params)
         }
 
-        gridLayout.setBackgroundColor(Color.parseColor("#CC1A1A1A"))
         dialog.setContentView(gridLayout)
         dialog.show()
     }
