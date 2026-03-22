@@ -32,6 +32,7 @@ import androidx.camera.video.VideoCapture
 import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.FaceDetection
 import com.google.mlkit.vision.face.FaceDetector
@@ -46,6 +47,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnCapture: ImageButton
     private lateinit var btnFlip: ImageButton
     private lateinit var btnFlash: ImageButton
+    private lateinit var btnTimer: ImageButton
+    private lateinit var btnRatio: TextView
+    private lateinit var btnResolution: TextView
     private lateinit var btnGallery: ImageButton
     private lateinit var btnRecord: ImageButton
     private lateinit var btnPause: ImageButton
@@ -57,6 +61,12 @@ class MainActivity : AppCompatActivity() {
     private lateinit var recordingTimer: TextView
     private lateinit var overlayView: FaceOverlayView
     private lateinit var zoomRuler: ZoomRulerView
+    private lateinit var zoomButtons: LinearLayout
+    private lateinit var zoomPt6: TextView
+    private lateinit var zoom1x: TextView
+    private lateinit var zoom2x: TextView
+    private lateinit var zoom3x: TextView
+    private lateinit var zoom10x: TextView
     private lateinit var modeFocus: TextView
     private lateinit var modePhoto: TextView
     private lateinit var modeVideo: TextView
@@ -75,10 +85,12 @@ class MainActivity : AppCompatActivity() {
     private var flashEnabled = false
     private var currentMode = "תמונה"
     private var timerDelay = 0
+    private var zoomRulerVisible = false
 
     private val handler = Handler(Looper.getMainLooper())
     private var timerSeconds = 0
     private var timerRunnable: Runnable? = null
+    private var hideRulerRunnable: Runnable? = null
 
     private lateinit var scaleGestureDetector: ScaleGestureDetector
     private lateinit var gestureDetector: GestureDetector
@@ -95,6 +107,9 @@ class MainActivity : AppCompatActivity() {
         btnCapture = findViewById(R.id.btnCapture)
         btnFlip = findViewById(R.id.btnFlip)
         btnFlash = findViewById(R.id.btnFlash)
+        btnTimer = findViewById(R.id.btnTimer)
+        btnRatio = findViewById(R.id.btnRatio)
+        btnResolution = findViewById(R.id.btnResolution)
         btnGallery = findViewById(R.id.btnGallery)
         btnRecord = findViewById(R.id.btnRecord)
         btnPause = findViewById(R.id.btnPause)
@@ -106,6 +121,12 @@ class MainActivity : AppCompatActivity() {
         recordingTimer = findViewById(R.id.recordingTimer)
         overlayView = findViewById(R.id.overlayView)
         zoomRuler = findViewById(R.id.zoomRuler)
+        zoomButtons = findViewById(R.id.zoomButtons)
+        zoomPt6 = findViewById(R.id.zoomPt6)
+        zoom1x = findViewById(R.id.zoom1x)
+        zoom2x = findViewById(R.id.zoom2x)
+        zoom3x = findViewById(R.id.zoom3x)
+        zoom10x = findViewById(R.id.zoom10x)
         modeFocus = findViewById(R.id.modeFocus)
         modePhoto = findViewById(R.id.modePhoto)
         modeVideo = findViewById(R.id.modeVideo)
@@ -119,11 +140,13 @@ class MainActivity : AppCompatActivity() {
                 .build()
         )
 
-        // פס זום - linearZoom נכון
+        // סרגל זום
         zoomRuler.onZoomChanged = { linear ->
             camera?.cameraControl?.setLinearZoom(linear)
+            scheduleHideRuler()
         }
 
+        // Pinch to zoom - מציג סרגל
         scaleGestureDetector = ScaleGestureDetector(this,
             object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
                 override fun onScale(detector: ScaleGestureDetector): Boolean {
@@ -132,6 +155,7 @@ class MainActivity : AppCompatActivity() {
                     camera?.cameraControl?.setZoomRatio(
                         newZoom.coerceIn(zoom?.minZoomRatio ?: 1f,
                             zoom?.maxZoomRatio ?: 1f))
+                    showZoomRuler()
                     return true
                 }
             })
@@ -170,6 +194,9 @@ class MainActivity : AppCompatActivity() {
         }
         btnFlip.setOnClickListener { flipCamera() }
         btnFlash.setOnClickListener { toggleFlash() }
+        btnTimer.setOnClickListener { showTimerMenu() }
+        btnRatio.setOnClickListener { showRatioMenu() }
+        btnResolution.setOnClickListener { showResolutionMenu() }
         btnRecord.setOnClickListener { startRecording() }
         btnPause.setOnClickListener { pauseRecording() }
         btnStop.setOnClickListener { stopRecording() }
@@ -182,60 +209,144 @@ class MainActivity : AppCompatActivity() {
         modeVideo.setOnClickListener { switchMode("וידאו") }
         modeMore.setOnClickListener { showMoreModes() }
 
+        zoomPt6.setOnClickListener { setZoomDirect(0.0f, ".6") }
+        zoom1x.setOnClickListener { setZoomDirect(0.1f, "1×") }
+        zoom2x.setOnClickListener { setZoomDirect(0.3f, "2") }
+        zoom3x.setOnClickListener { setZoomDirect(0.5f, "3") }
+        zoom10x.setOnClickListener { setZoomDirect(0.9f, "10") }
+
         btnGallery.setOnClickListener {
             try {
-                val intent = Intent(Intent.ACTION_PICK,
-                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
-                startActivity(intent)
+                startActivity(Intent(Intent.ACTION_PICK,
+                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI))
             } catch (e: Exception) {
                 Toast.makeText(this, "שגיאה בפתיחת גלריה", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
-    private fun showSettings() {
-        val items = arrayOf(
-            "⏱️ ללא טיימר",
-            "⏱️ טיימר 3 שניות",
-            "⏱️ טיימר 10 שניות",
-            "🖼️ יחס 4:3",
-            "🖼️ יחס 16:9"
-        )
+    private fun showZoomRuler() {
+        zoomRuler.visibility = View.VISIBLE
+        zoomRulerVisible = true
+        scheduleHideRuler()
+    }
+
+    private fun scheduleHideRuler() {
+        hideRulerRunnable?.let { handler.removeCallbacks(it) }
+        hideRulerRunnable = Runnable {
+            zoomRuler.visibility = View.GONE
+            zoomRulerVisible = false
+        }
+        handler.postDelayed(hideRulerRunnable!!, 3000)
+    }
+
+    private fun setZoomDirect(linear: Float, label: String) {
+        camera?.cameraControl?.setLinearZoom(linear)
+        listOf(zoomPt6, zoom1x, zoom2x, zoom3x, zoom10x).forEach {
+            it.setTextColor(Color.parseColor("#AAAAAA"))
+            it.setBackgroundColor(Color.TRANSPARENT)
+        }
+        val selected = listOf(zoomPt6, zoom1x, zoom2x, zoom3x, zoom10x)
+            .find { it.text == label }
+        selected?.setTextColor(Color.WHITE)
+        selected?.setBackgroundColor(Color.parseColor("#44FFFFFF"))
+        showZoomRuler()
+    }
+
+    private fun showTimerMenu() {
+        val options = arrayOf("ללא טיימר ⏱️", "3 שניות", "10 שניות")
         android.app.AlertDialog.Builder(this)
-            .setTitle("⚙️ הגדרות")
-            .setItems(items) { _, which ->
-                when (which) {
-                    0 -> { timerDelay = 0
-                        Toast.makeText(this, "ללא טיימר", Toast.LENGTH_SHORT).show() }
-                    1 -> { timerDelay = 3
-                        Toast.makeText(this, "טיימר 3 שניות ✓", Toast.LENGTH_SHORT).show() }
-                    2 -> { timerDelay = 10
-                        Toast.makeText(this, "טיימר 10 שניות ✓", Toast.LENGTH_SHORT).show() }
-                    3 -> Toast.makeText(this, "יחס 4:3 ✓", Toast.LENGTH_SHORT).show()
-                    4 -> Toast.makeText(this, "יחס 16:9 ✓", Toast.LENGTH_SHORT).show()
-                }
+            .setTitle("טיימר")
+            .setItems(options) { _, which ->
+                timerDelay = when (which) { 1 -> 3; 2 -> 10; else -> 0 }
+                btnTimer.alpha = if (timerDelay > 0) 1f else 0.5f
+                Toast.makeText(this, options[which], Toast.LENGTH_SHORT).show()
             }.show()
     }
 
-    private fun showMoreModes() {
-        val modes = arrayOf(
-            "לילה 🌙",
-            "פנורמה 🌅",
-            "מזון 🍔",
-            "הילוך איטי 🐢",
-            "טיים-לאפס ⏩",
-            "מקצועי 📷",
-            "פורטרט 👤",
-            "HDR 🌈"
-        )
-        val videoModes = setOf("הילוך איטי 🐢", "טיים-לאפס ⏩")
+    private fun showRatioMenu() {
+        val options = arrayOf("3:4", "9:16", "1:1", "מלא")
         android.app.AlertDialog.Builder(this)
-            .setTitle("בחר מצב")
-            .setItems(modes) { _, which ->
-                val selected = modes[which]
-                if (selected in videoModes) switchMode("וידאו")
-                Toast.makeText(this, "מצב: $selected", Toast.LENGTH_SHORT).show()
+            .setTitle("יחס תמונה")
+            .setItems(options) { _, which ->
+                btnRatio.text = options[which]
+                Toast.makeText(this, "יחס: ${options[which]}", Toast.LENGTH_SHORT).show()
             }.show()
+    }
+
+    private fun showResolutionMenu() {
+        val options = arrayOf("12M", "50M", "200M")
+        android.app.AlertDialog.Builder(this)
+            .setTitle("רזולוציה")
+            .setItems(options) { _, which ->
+                btnResolution.text = options[which]
+                Toast.makeText(this, "רזולוציה: ${options[which]}", Toast.LENGTH_SHORT).show()
+            }.show()
+    }
+
+    private fun showSettings() {
+        val dialog = BottomSheetDialog(this)
+        val view = layoutInflater.inflate(android.R.layout.simple_list_item_1, null)
+        val items = arrayOf(
+            "📸 מדריך קומפוזיציה",
+            "🏃 תגיות מיקום",
+            "🔊 צלילי צילום",
+            "💧 סימן מים",
+            "↔️ שמור סלפי כמו תצוגה מקדימה",
+            "🎬 FPS אוטומטי לוידאו",
+            "📊 מייצב וידאו"
+        )
+        android.app.AlertDialog.Builder(this)
+            .setTitle("⚙️ הגדרות מצלמה")
+            .setItems(items) { _, which ->
+                Toast.makeText(this, items[which], Toast.LENGTH_SHORT).show()
+            }.show()
+        dialog.dismiss()
+    }
+
+    private fun showMoreModes() {
+        val dialog = BottomSheetDialog(this)
+        val gridLayout = android.widget.GridLayout(this).apply {
+            columnCount = 4
+            setPadding(24, 24, 24, 24)
+        }
+
+        val modes = listOf(
+            "לילה" to "🌙",
+            "וידאו\nמקצועי" to "🎬",
+            "מקצועי" to "📷",
+            "הילוך\nאיטי" to "🐢",
+            "היפר\nטיים-לאפס" to "⏩",
+            "פנורמה" to "🌅",
+            "מזון" to "🍔",
+            "טייק\nבודד" to "🎯"
+        )
+        val videoModes = setOf("הילוך\nאיטי", "היפר\nטיים-לאפס", "וידאו\nמקצועי")
+
+        for ((name, emoji) in modes) {
+            val btn = TextView(this).apply {
+                text = "$emoji\n$name"
+                textAlignment = View.TEXT_ALIGNMENT_CENTER
+                setTextColor(Color.WHITE)
+                textSize = 11f
+                setPadding(12, 16, 12, 16)
+                setOnClickListener {
+                    if (name in videoModes) switchMode("וידאו")
+                    Toast.makeText(this@MainActivity, name, Toast.LENGTH_SHORT).show()
+                    dialog.dismiss()
+                }
+            }
+            val params = android.widget.GridLayout.LayoutParams().apply {
+                width = 0
+                columnSpec = android.widget.GridLayout.spec(
+                    android.widget.GridLayout.UNDEFINED, 1f)
+            }
+            gridLayout.addView(btn, params)
+        }
+
+        gridLayout.setBackgroundColor(Color.parseColor("#CC1A1A1A"))
+        dialog.setContentView(gridLayout)
+        dialog.show()
     }
 
     private fun switchMode(mode: String) {
@@ -312,7 +423,6 @@ class MainActivity : AppCompatActivity() {
                 CameraSelector.Builder().requireLensFacing(lensFacing).build(),
                 preview, imageCapture, videoCapture, imageAnalysis)
 
-            // עדכן פס זום בזמן אמת
             camera?.cameraInfo?.zoomState?.observe(this) { state ->
                 zoomRuler.setLinearZoom(state.linearZoom, state.zoomRatio)
             }
@@ -332,9 +442,7 @@ class MainActivity : AppCompatActivity() {
                         Toast.LENGTH_SHORT).show()
                     countdown--
                     handler.postDelayed(this, 1000)
-                } else {
-                    takePhoto()
-                }
+                } else takePhoto()
             }
         }
         handler.post(countdownTimer)
@@ -344,7 +452,6 @@ class MainActivity : AppCompatActivity() {
         val ic = imageCapture ?: return
         flashOverlay.visibility = View.VISIBLE
         handler.postDelayed({ flashOverlay.visibility = View.GONE }, 150)
-
         val name = "UltraVision_${System.currentTimeMillis()}"
         val cv = ContentValues().apply {
             put(MediaStore.MediaColumns.DISPLAY_NAME, name)
@@ -410,13 +517,11 @@ class MainActivity : AppCompatActivity() {
     private fun pauseRecording() {
         if (!isRecording) return
         if (!isPaused) {
-            recording?.pause()
-            isPaused = true
+            recording?.pause(); isPaused = true
             timerRunnable?.let { handler.removeCallbacks(it) }
             btnPause.setImageResource(android.R.drawable.ic_media_play)
         } else {
-            recording?.resume()
-            isPaused = false
+            recording?.resume(); isPaused = false
             startTimer()
             btnPause.setImageResource(android.R.drawable.ic_media_pause)
         }
@@ -424,8 +529,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun stopRecording() {
         recording?.stop()
-        isRecording = false
-        isPaused = false
+        isRecording = false; isPaused = false
         timerRunnable?.let { handler.removeCallbacks(it) }
         recordingTimer.visibility = View.GONE
         btnRecord.setBackgroundResource(R.drawable.circle_white)
@@ -481,6 +585,7 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
         camera?.cameraControl?.enableTorch(false)
         timerRunnable?.let { handler.removeCallbacks(it) }
+        hideRulerRunnable?.let { handler.removeCallbacks(it) }
         cameraExecutor.shutdown()
     }
 
@@ -490,4 +595,3 @@ class MainActivity : AppCompatActivity() {
             Manifest.permission.RECORD_AUDIO
         )
     }
-}
