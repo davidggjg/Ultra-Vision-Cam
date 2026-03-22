@@ -12,28 +12,27 @@ class ZoomRulerView @JvmOverloads constructor(
 
     var onZoomChanged: ((Float) -> Unit)? = null
 
-    private val paintWhite = Paint().apply {
-        color = Color.WHITE
-        strokeWidth = 2f
+    private val paintTick = Paint().apply {
         isAntiAlias = true
-        textSize = 28f
-        textAlign = Paint.Align.CENTER
+        strokeCap = Paint.Cap.ROUND
     }
 
     private val paintYellow = Paint().apply {
         color = Color.YELLOW
-        strokeWidth = 3f
         isAntiAlias = true
-        textSize = 38f
         textAlign = Paint.Align.CENTER
         typeface = Typeface.DEFAULT_BOLD
+    }
+
+    private val paintBg = Paint().apply {
+        color = Color.parseColor("#88000000")
     }
 
     private var linearZoom = 0.1f
     private var displayRatio = 1f
     private var lastX = 0f
-    private val numTicks = 200
-    private val tickSpacing = 18f
+    private val totalTicks = 300
+    private val tickSpacing = 14f
 
     fun setLinearZoom(linear: Float, ratio: Float) {
         linearZoom = linear.coerceIn(0f, 1f)
@@ -47,7 +46,7 @@ class ZoomRulerView @JvmOverloads constructor(
             MotionEvent.ACTION_MOVE -> {
                 val dx = event.x - lastX
                 lastX = event.x
-                linearZoom = (linearZoom + dx / (width * 2f)).coerceIn(0f, 1f)
+                linearZoom = (linearZoom + dx / (width * 2.5f)).coerceIn(0f, 1f)
                 onZoomChanged?.invoke(linearZoom)
                 invalidate()
             }
@@ -58,28 +57,49 @@ class ZoomRulerView @JvmOverloads constructor(
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         if (width == 0) return
+
+        // רקע שקוף
+        canvas.drawRoundRect(0f, 0f, width.toFloat(), height.toFloat(),
+            20f, 20f, paintBg)
+
         val cx = width / 2f
         val cy = height / 2f
-        val currentPos = linearZoom * (numTicks * tickSpacing)
+        val currentPos = linearZoom * (totalTicks * tickSpacing)
 
-        for (i in 0..numTicks) {
+        // ציור פסים
+        for (i in 0..totalTicks) {
             val tickPos = i * tickSpacing
             val screenX = cx + (tickPos - currentPos)
-            if (screenX < 0 || screenX > width) continue
-            val isMajor = (i % 10 == 0)
-            val tickH = if (isMajor) cy * 0.6f else cy * 0.3f
-            paintWhite.color = if (isMajor) Color.WHITE
-                else Color.parseColor("#66FFFFFF")
-            paintWhite.strokeWidth = if (isMajor) 3f else 1.5f
-            canvas.drawLine(screenX, cy - tickH, screenX, cy + tickH, paintWhite)
+            if (screenX < 4f || screenX > width - 4f) continue
+
+            val isMajor = (i % 25 == 0)
+            val isMedium = (i % 5 == 0)
+            val tickH = when {
+                isMajor -> cy * 0.65f
+                isMedium -> cy * 0.45f
+                else -> cy * 0.25f
+            }
+            paintTick.color = when {
+                isMajor -> Color.WHITE
+                isMedium -> Color.parseColor("#BBFFFFFF")
+                else -> Color.parseColor("#55FFFFFF")
+            }
+            paintTick.strokeWidth = if (isMajor) 3f else if (isMedium) 2f else 1f
+            canvas.drawLine(screenX, cy - tickH, screenX, cy + tickH, paintTick)
         }
 
+        // קו אינדיקטור צהוב במרכז
         paintYellow.strokeWidth = 3f
-        canvas.drawLine(cx, cy * 0.2f, cx, cy * 1.8f, paintYellow)
+        paintYellow.style = Paint.Style.STROKE
+        canvas.drawLine(cx, cy * 0.15f, cx, cy * 1.85f, paintYellow)
 
+        // טקסט זום
+        paintYellow.style = Paint.Style.FILL
+        paintYellow.textSize = height * 0.32f
         val label = if (displayRatio < 10f)
             String.format("%.1fx", displayRatio)
-        else String.format("%.0fx", displayRatio)
-        canvas.drawText(label, cx, cy * 0.15f, paintYellow)
+        else
+            String.format("%.0fx", displayRatio)
+        canvas.drawText(label, cx, cy * 0.38f, paintYellow)
     }
 }
