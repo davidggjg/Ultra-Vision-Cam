@@ -68,7 +68,8 @@ class ZoomRulerView @JvmOverloads constructor(
             if (screenX < 0 || screenX > width) continue
             val isMajor = (i % 10 == 0)
             val tickH = if (isMajor) cy * 0.6f else cy * 0.3f
-            paintWhite.color = if (isMajor) Color.WHITE else Color.parseColor("#66FFFFFF")
+            paintWhite.color = if (isMajor) Color.WHITE
+                else Color.parseColor("#66FFFFFF")
             paintWhite.strokeWidth = if (isMajor) 3f else 1.5f
             canvas.drawLine(screenX, cy - tickH, screenX, cy + tickH, paintWhite)
         }
@@ -76,8 +77,9 @@ class ZoomRulerView @JvmOverloads constructor(
         paintYellow.strokeWidth = 3f
         canvas.drawLine(cx, cy * 0.2f, cx, cy * 1.8f, paintYellow)
 
-        val label = if (displayRatio < 10f) String.format("%.1fx", displayRatio)
-            else String.format("%.0fx", displayRatio)
+        val label = if (displayRatio < 10f)
+            String.format("%.1fx", displayRatio)
+        else String.format("%.0fx", displayRatio)
         canvas.drawText(label, cx, cy * 0.15f, paintYellow)
     }
 }
