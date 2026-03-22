@@ -119,12 +119,9 @@ class MainActivity : AppCompatActivity() {
                 .build()
         )
 
-        // זום עם פס
-        zoomRuler.onZoomChanged = { zoom ->
-            camera?.cameraInfo?.zoomState?.value?.let { state ->
-                camera?.cameraControl?.setZoomRatio(
-                    zoom.coerceIn(state.minZoomRatio, state.maxZoomRatio))
-            }
+        // פס זום - linearZoom נכון
+        zoomRuler.onZoomChanged = { linear ->
+            camera?.cameraControl?.setLinearZoom(linear)
         }
 
         scaleGestureDetector = ScaleGestureDetector(this,
@@ -208,9 +205,12 @@ class MainActivity : AppCompatActivity() {
             .setTitle("⚙️ הגדרות")
             .setItems(items) { _, which ->
                 when (which) {
-                    0 -> { timerDelay = 0; Toast.makeText(this, "ללא טיימר", Toast.LENGTH_SHORT).show() }
-                    1 -> { timerDelay = 3; Toast.makeText(this, "טיימר 3 שניות ✓", Toast.LENGTH_SHORT).show() }
-                    2 -> { timerDelay = 10; Toast.makeText(this, "טיימר 10 שניות ✓", Toast.LENGTH_SHORT).show() }
+                    0 -> { timerDelay = 0
+                        Toast.makeText(this, "ללא טיימר", Toast.LENGTH_SHORT).show() }
+                    1 -> { timerDelay = 3
+                        Toast.makeText(this, "טיימר 3 שניות ✓", Toast.LENGTH_SHORT).show() }
+                    2 -> { timerDelay = 10
+                        Toast.makeText(this, "טיימר 10 שניות ✓", Toast.LENGTH_SHORT).show() }
                     3 -> Toast.makeText(this, "יחס 4:3 ✓", Toast.LENGTH_SHORT).show()
                     4 -> Toast.makeText(this, "יחס 16:9 ✓", Toast.LENGTH_SHORT).show()
                 }
@@ -233,9 +233,7 @@ class MainActivity : AppCompatActivity() {
             .setTitle("בחר מצב")
             .setItems(modes) { _, which ->
                 val selected = modes[which]
-                if (selected in videoModes) {
-                    switchMode("וידאו")
-                }
+                if (selected in videoModes) switchMode("וידאו")
                 Toast.makeText(this, "מצב: $selected", Toast.LENGTH_SHORT).show()
             }.show()
     }
@@ -316,7 +314,7 @@ class MainActivity : AppCompatActivity() {
 
             // עדכן פס זום בזמן אמת
             camera?.cameraInfo?.zoomState?.observe(this) { state ->
-                zoomRuler.setZoom(state.zoomRatio)
+                zoomRuler.setLinearZoom(state.linearZoom, state.zoomRatio)
             }
 
             if (flashEnabled) camera?.cameraControl?.enableTorch(true)
